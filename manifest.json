@@ -1,0 +1,18 @@
+{
+  "extensions": {
+    "Keyfactor.Orchestrators.Extensions.IOrchestratorJobExtension": {
+      "CertStores.MOST.Inventory": {
+        "assemblypath": "Keyfactor.Extensions.Orchestrators.MOST.dll",
+        "TypeFullName": "Keyfactor.Extensions.Orchestrator.SampleOrchestratorExtension.Inventory"
+      },
+      "CertStores.MOST.Discovery": {
+        "assemblypath": "Keyfactor.Extensions.Orchestrators.MOST.dll",
+        "TypeFullName": "Keyfactor.Extensions.Orchestrator.SampleOrchestratorExtension.Discovery"
+      },
+      "CertStores.MOST.Management": {
+        "assemblypath": "Keyfactor.Extensions.Orchestrators.MOST.dll",
+        "TypeFullName": "Keyfactor.Extensions.Orchestrator.SampleOrchestratorExtension.Management"
+      }
+    }
+  }
+}

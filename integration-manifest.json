@@ -1,0 +1,68 @@
+{
+  "$schema": "https://keyfactor.github.io/v2/integration-manifest-schema.json",
+  "about": {
+    "orchestrator": {
+      "UOFramework": "10.1",
+      "keyfactor_platform_version": "9.10",
+      "pam_support": false,
+      "store_types": [
+        {
+          "Name": "MyOrchestratorStoreType",
+          "ShortName": "MOST",
+          "Capability": "MOST",
+          "LocalStore": false,
+          "SupportedOperations": {
+            "Add": false,
+            "Create": false,
+            "Discovery": false,
+            "Enrollment": false,
+            "Remove": false
+          },
+          "Properties": [
+            {
+              "Name": "CustomField1",
+              "DisplayName": "CustomField1",
+              "Description": "CustomField1 Description",
+              "Type": "String",
+              "DependsOn": "",
+              "DefaultValue": "default",
+              "Required": true
+            },
+            {
+              "Name": "CustomField2",
+              "DisplayName": "CustomField2",
+              "Description": "CustomField2 Description",
+              "Type": "String",
+              "DependsOn": "",
+              "DefaultValue": "",
+              "Required": true
+            }
+          ],
+          "EntryParameters": [],
+          "PasswordOptions": {
+            "EntrySupported": false,
+            "StoreRequired": false,
+            "Style": "Default"
+          },
+          "StorePathType": "",
+          "StorePathValue": "",
+          "StorePathDescription": "",
+          "PrivateKeyAllowed": "Forbidden",
+          "JobProperties": [],
+          "ServerRequired": true,
+          "PowerShell": false,
+          "BlueprintAllowed": false,
+          "CustomAliasAllowed": "Forbidden"
+        }
+      ]
+    }
+  },
+  "description": "This project is meant to be a template to quickly build a basic integration product build. Currently in dev, a work in progress,",
+  "integration_type": "orchestrator",
+  "link_github": false,
+  "name": "Integration Template",
+  "release_dir": "UPDATE-THIS-WITH-PATH-TO-BINARY-BUILD-FOLDER",
+  "status": "prototype",
+  "support_level": "community",
+  "update_catalog": false
+}
