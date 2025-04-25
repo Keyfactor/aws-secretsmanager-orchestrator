@@ -22,7 +22,7 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
         public void InitializeClient() { 
             _secretManagerClient = new AmazonSecretsManagerClient();
             // additional configuration goes here
-            _secretManagerClient
+            //_secretManagerClient
         }
 
         /// <summary>

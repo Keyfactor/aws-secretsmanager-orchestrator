@@ -24,8 +24,7 @@ using Keyfactor.Orchestrators.Extensions;
 using Keyfactor.Orchestrators.Extensions.Interfaces;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-
-
+using RestSharp;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace Keyfactor.AnyAgent.AwsCertificateManager
@@ -223,19 +222,17 @@ namespace Keyfactor.AnyAgent.AwsCertificateManager
                 _logger.MethodEntry();
                 _logger.LogTrace($"Creating RestClient with OAuth URL: {parameters.OAuthUrl}");
 
-                var client = new RestClient(parameters.OAuthUrl)
-                {
-                    Timeout = -1
-                };
+                var client = new RestClient(parameters.OAuthUrl);
 
-                if (client.BaseUrl.Scheme != "https")
+                if (client.Options.BaseUrl.Scheme != "https")
                 {
                     var errorMessage = $"OAuth server needs to use HTTPS scheme but does not: {parameters.OAuthUrl}";
                     _logger.LogError(errorMessage);
                     throw new Exception(errorMessage);
                 }
 
-                var request = new RestRequest(Method.POST);
+                var request = new RestRequest { Method = Method.Post };
+
                 request.AddHeader("Accept", "application/json");
                 var clientId = parameters.ClientId;
                 var clientSecret = parameters.ClientSecret;
@@ -284,5 +281,21 @@ namespace Keyfactor.AnyAgent.AwsCertificateManager
                 return field;
             }
         }
+    }
+    public class OAuthParameters
+    {
+        public string OAuthUrl { get; set; }
+        public string GrantType { get; set; }
+        public string Scope { get; set; }
+        public string ClientId { get; set; }
+        public string ClientSecret { get; set; }
+    }
+
+    public class OAuthResponse
+    {
+        [JsonProperty("token_type", NullValueHandling = NullValueHandling.Ignore)] public string TokenType { get; set; }
+        [JsonProperty("expires_in", NullValueHandling = NullValueHandling.Ignore)] public int ExpiresIn { get; set; }
+        [JsonProperty("access_token", NullValueHandling = NullValueHandling.Ignore)] public string AccessToken { get; set; }
+        [JsonProperty("scope", NullValueHandling = NullValueHandling.Ignore)] public string Scope { get; set; }
     }
 }

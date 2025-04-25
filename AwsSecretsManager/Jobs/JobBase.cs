@@ -19,11 +19,6 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
         {
             JobParameters = new AwsSecretsManagerJobParameters();
 
-
-
-            JobParameters = new AwsSecretsManagerJobParameters(config);
-
-
             try
             {
 
