@@ -1,23 +1,36 @@
 ﻿using System;
 using System.Collections.Generic;
-
+using Keyfactor.Extensions.Orchestrator.AzureKeyVault;
+using Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs;
 using Keyfactor.Logging;
 using Keyfactor.Orchestrators.Extensions;
-
+using Keyfactor.Orchestrators.Extensions.Interfaces;
 using Microsoft.Extensions.Logging;
 
-namespace Keyfactor.Extensions.Orchestrator.SampleOrchestratorExtension
+
+namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
 {
     // The Inventory class implementes IAgentJobExtension and is meant to find all of the certificates in a given certificate store on a given server
     //  and return those certificates back to Keyfactor for storing in its database.  Private keys will NOT be passed back to Keyfactor Command 
-    public class Inventory : IInventoryJobExtension
+    [Job(KeyfactorJobType.INVENTORY)]
+    public class Inventory : JobBase<Inventory>, IInventoryJobExtension
     {
-        //Necessary to implement IInventoryJobExtension but not used.  Leave as empty string.
-        public string ExtensionName => "";
+        public Inventory(IPAMSecretResolver resolver)
+        {
+            logger = LogHandler.GetClassLogger(GetType());
+            PamSecretResolver = resolver;
+        }
 
         //Job Entry Point
         public JobResult ProcessJob(InventoryJobConfiguration config, SubmitInventoryUpdate submitInventory)
         {
+            logger.MethodEntry();
+            logger.LogTrace($"Received new inventory job. Job ID = {config.JobId}");
+
+            logger.LogTrace($"calling base initialize method..");
+
+            base.Initialize(config);
+
             //METHOD ARGUMENTS...
             //config - contains context information passed from KF Command to this job run:
             //
@@ -30,7 +43,7 @@ namespace Keyfactor.Extensions.Orchestrator.SampleOrchestratorExtension
             // config.CertificateStoreDetails.Properties - JSON string containing custom store properties for this specific store type
 
             //NLog Logging to c:\CMS\Logs\CMS_Agent_Log.txt
-            ILogger logger = LogHandler.GetClassLogger(this.GetType());
+            
             logger.LogDebug($"Begin Inventory...");
 
             //List<AgentCertStoreInventoryItem> is the collection that the interface expects to return from this job.  It will contain a collection of certificates found in the store along with other information about those certificates

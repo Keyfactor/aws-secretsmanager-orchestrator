@@ -3,42 +3,171 @@
   "about": {
     "orchestrator": {
       "UOFramework": "10.1",
-      "keyfactor_platform_version": "9.10",
-      "pam_support": false,
+      "keyfactor_platform_version": "11",
+      "pam_support": true,
       "store_types": [
         {
-          "Name": "MyOrchestratorStoreType",
-          "ShortName": "MOST",
-          "Capability": "MOST",
+          "Name": "AwsSecretsManager",
+          "ShortName": "AWSSM",
+          "Capability": "AWSSM",
           "LocalStore": false,
           "SupportedOperations": {
-            "Add": false,
+            "Add": true,
             "Create": false,
             "Discovery": false,
-            "Enrollment": false,
-            "Remove": false
+            "Enrollment": true,
+            "Remove": true
           },
           "Properties": [
             {
-              "Name": "CustomField1",
-              "DisplayName": "CustomField1",
-              "Description": "CustomField1 Description",
-              "Type": "String",
+              "Name": "UseEC2AssumeRole",
+              "DisplayName": "Assume new Account / Role in EC2",
+              "Type": "Bool",
               "DependsOn": "",
-              "DefaultValue": "default",
-              "Required": true
+              "DefaultValue": "false",
+              "Required": true,
+              "IsPAMEligible": false,
+              "Description": "A switch to enable the store to assume a new Account ID and Role when using EC2 credentials"
             },
             {
-              "Name": "CustomField2",
-              "DisplayName": "CustomField2",
-              "Description": "CustomField2 Description",
+              "Name": "UseOAuth",
+              "DisplayName": "Use OAuth 2.0 Provider",
+              "Type": "Bool",
+              "DependsOn": "",
+              "DefaultValue": "false",
+              "Required": true,
+              "IsPAMEligible": false,
+              "Description": "A switch to enable the store to use an OAuth provider workflow to authenticate with AWS ACM"
+            },
+            {
+              "Name": "UseIAM",
+              "DisplayName": "Use IAM User Auth",
+              "Type": "Bool",
+              "DependsOn": "",
+              "DefaultValue": "false",
+              "Required": true,
+              "IsPAMEligible": false,
+              "Description": "A switch to enable the store to use IAM User auth to assume a role when authenticating with AWS ACM"
+            },
+            {
+              "Name": "EC2AssumeRole",
+              "DisplayName": "AWS Role to Assume (EC2)",
+              "Type": "String",
+              "DependsOn": "UseEC2AssumeRole",
+              "DefaultValue": "",
+              "Required": false,
+              "IsPAMEligible": false,
+              "Description": "The AWS Role to assume using the EC2 instance credentials"
+            },
+            {
+              "Name": "OAuthScope",
+              "DisplayName": "OAuth Scope",
+              "Type": "String",
+              "DependsOn": "UseOAuth",
+              "DefaultValue": "",
+              "Required": false,
+              "IsPAMEligible": false,
+              "Description": "This is the OAuth Scope needed for Okta OAuth, defined in Okta"
+            },
+            {
+              "Name": "OAuthGrantType",
+              "DisplayName": "OAuth Grant Type",
+              "Type": "String",
+              "DependsOn": "UseOAuth",
+              "DefaultValue": "client_credentials",
+              "Required": false,
+              "IsPAMEligible": false,
+              "Description": "In OAuth 2.0, the term 'grant type' refers to the way an application gets an access token. In Okta this is `client_credentials`"
+            },
+            {
+              "Name": "OAuthUrl",
+              "DisplayName": "OAuth Url",
+              "Type": "String",
+              "DependsOn": "UseOAuth",
+              "DefaultValue": "https://***/oauth2/default/v1/token",
+              "Required": false,
+              "IsPAMEligible": false,
+              "Description": "An optional parameter sts:ExternalId to pass with Assume Role calls"
+            },
+            {
+              "Name": "IAMAssumeRole",
+              "DisplayName": "AWS Role to Assume (IAM)",
+              "Type": "String",
+              "DependsOn": "UseIAM",
+              "DefaultValue": "",
+              "Required": false,
+              "IsPAMEligible": false,
+              "Description": "The AWS Role to assume as the IAM User."
+            },
+            {
+              "Name": "OAuthAssumeRole",
+              "DisplayName": "AWS Role to Assume (OAuth)",
+              "Type": "String",
+              "DependsOn": "UseOAuth",
+              "DefaultValue": "",
+              "Required": false,
+              "IsPAMEligible": false,
+              "Description": "The AWS Role to assume after getting an OAuth token."
+            },
+            {
+              "Name": "ExternalId",
+              "DisplayName": "sts:ExternalId",
               "Type": "String",
               "DependsOn": "",
               "DefaultValue": "",
-              "Required": true
+              "Required": false,
+              "IsPAMEligible": false,
+              "Description": "An optional parameter sts:ExternalId to pass with Assume Role calls"
+            },
+            {
+              "Name": "ServerUsername",
+              "DisplayName": "Server Username",
+              "Type": "Secret",
+              "DependsOn": "",
+              "DefaultValue": "",
+              "Required": false,
+              "IsPAMEligible": true,
+              "Description": "The AWS Access Key for an IAM User or Client ID for OAuth. Depends on Auth method in use."
+            },
+            {
+              "Name": "ServerPassword",
+              "DisplayName": "Server Password",
+              "Type": "Secret",
+              "DependsOn": "",
+              "DefaultValue": "",
+              "Required": false,
+              "IsPAMEligible": true,
+              "Description": "The AWS Access Secret for an IAM User or Client Secret for OAuth. Depends on Auth method in use."
             }
           ],
-          "EntryParameters": [],
+          "EntryParameters": [
+            {
+              "Name": "CertificateTags",
+              "DisplayName": "Certificate Tags",
+              "Description": "If desired, tags can be applied to the certificate entries in AWS Secrets Manager.  Provide them as a JSON string of key-value pairs ie: '{'tag-name': 'tag-content', 'other-tag-name': 'other-tag-content'}'",
+              "Type": "string",
+              "RequiredWhen": {
+                "HasPrivateKey": false,
+                "OnAdd": false,
+                "OnRemove": false,
+                "OnReenrollment": false
+              },
+              "DefaultValue": ""
+            },
+            {
+              "Name": "ReplicaRegions",
+              "DisplayName": "Replica Regions",
+              "Description": "To have the certificate replicated to other regions, you can provide them here as a JSON array in the format: [{ 'KmsKeyId': '<optionally specify the encryption key ID', 'Region': '<region name>'}, {...}]",
+              "Type": "string",
+              "RequiredWhen": {
+                "HasPrivateKey": false,
+                "OnAdd": false,
+                "OnRemove": false,
+                "OnReenrollment": false
+              },
+              "DefaultValue": ""
+            }
+          ],
           "PasswordOptions": {
             "EntrySupported": false,
             "StoreRequired": false,
@@ -46,22 +175,22 @@
           },
           "StorePathType": "",
           "StorePathValue": "",
-          "StorePathDescription": "",
-          "PrivateKeyAllowed": "Forbidden",
+          "StorePathDescription": "The store path is an arbitrary identifier that will be set as a tag on the certificates in order to logically group them.  The tag will be in the following format: {'KeyfactorCertificateStore': '<store path>'}",
+          "PrivateKeyAllowed": "Optional",
           "JobProperties": [],
           "ServerRequired": true,
           "PowerShell": false,
           "BlueprintAllowed": false,
-          "CustomAliasAllowed": "Forbidden"
+          "CustomAliasAllowed": "Optional"
         }
       ]
     }
   },
-  "description": "This project is meant to be a template to quickly build a basic integration product build. Currently in dev, a work in progress,",
+  "description": "This orchestrator extension allows managing Certificates stored in AWS Secrets Manager",
   "integration_type": "orchestrator",
   "link_github": false,
   "name": "Integration Template",
-  "release_dir": "UPDATE-THIS-WITH-PATH-TO-BINARY-BUILD-FOLDER",
+  "release_dir": "AwsSecretsManagerOrchestrator/bin/Release",
   "status": "prototype",
   "support_level": "community",
   "update_catalog": false

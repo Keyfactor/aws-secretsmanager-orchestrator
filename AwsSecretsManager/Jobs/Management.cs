@@ -6,14 +6,10 @@ using Keyfactor.Orchestrators.Common.Enums;
 
 using Microsoft.Extensions.Logging;
 
-namespace Keyfactor.Extensions.Orchestrator.SampleOrchestratorExtension
+namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
 {
-    public class Management : IManagementJobExtension
+    public class Management : JobBase<Management>, IManagementJobExtension
     {
-        //Necessary to implement IManagementJobExtension but not used.  Leave as empty string.
-        public string ExtensionName => "";
-
-        //Job Entry Point
         public JobResult ProcessJob(ManagementJobConfiguration config)
         {
             //METHOD ARGUMENTS...
@@ -35,7 +31,7 @@ namespace Keyfactor.Extensions.Orchestrator.SampleOrchestratorExtension
 
 
             //NLog Logging to c:\CMS\Logs\CMS_Agent_Log.txt
-            ILogger logger = LogHandler.GetClassLogger(this.GetType());
+            ILogger logger = LogHandler.GetClassLogger(GetType());
             logger.LogDebug($"Begin Management...");
 
             try
@@ -64,17 +60,60 @@ namespace Keyfactor.Extensions.Orchestrator.SampleOrchestratorExtension
                         break;
                     default:
                         //Invalid OperationType.  Return error.  Should never happen though
-                        return new JobResult() { Result = Keyfactor.Orchestrators.Common.Enums.OrchestratorJobStatusJobResult.Failure, JobHistoryId = config.JobHistoryId, FailureMessage = $"Site {config.CertificateStoreDetails.StorePath} on server {config.CertificateStoreDetails.ClientMachine}: Unsupported operation: {config.OperationType.ToString()}" };
+                        return new JobResult() { Result = OrchestratorJobStatusJobResult.Failure, JobHistoryId = config.JobHistoryId, FailureMessage = $"Site {config.CertificateStoreDetails.StorePath} on server {config.CertificateStoreDetails.ClientMachine}: Unsupported operation: {config.OperationType.ToString()}" };
                 }
             }
             catch (Exception ex)
             {
                 //Status: 2=Success, 3=Warning, 4=Error
-                return new JobResult() { Result = Keyfactor.Orchestrators.Common.Enums.OrchestratorJobStatusJobResult.Failure, JobHistoryId = config.JobHistoryId, FailureMessage = "Custom message you want to show to show up as the error message in Job History in KF Command" };
+                return new JobResult() { Result = OrchestratorJobStatusJobResult.Failure, JobHistoryId = config.JobHistoryId, FailureMessage = "Custom message you want to show to show up as the error message in Job History in KF Command" };
             }
 
             //Status: 2=Success, 3=Warning, 4=Error
-            return new JobResult() { Result = Keyfactor.Orchestrators.Common.Enums.OrchestratorJobStatusJobResult.Success, JobHistoryId = config.JobHistoryId };
+            return new JobResult() { Result = OrchestratorJobStatusJobResult.Success, JobHistoryId = config.JobHistoryId };
         }
     }
 }
+
+// {
+            //                "LastInventory": [],
+            //                "CertificateStoreDetails": {
+            //                    "ClientMachine": "localmachine",
+            //                    "StorePath": "c:\\tempSOS\\mystore.json",
+            //                    "StorePassword": null,
+            //                    "Properties": {
+            //                        "StoreNameString": "my sample store",
+            //                        "ForTestingOnlyBool": "true",
+            //                        "CollectionNameMultipleChoice": "internal",
+            //                        "PrivateDetailsSecret": "my secret",
+            //                        "ServerUsername": "joe",
+            //                        "ServerPassword": "v",
+            //                        "ServerUseSsl": "true"
+            //                    },
+            //                "Type": 105
+            //                },
+            //                "OperationType": 2,
+            //                "Overwrite": false,
+            //                "JobCertificate": {
+            //                    "Thumbprint": null,
+            //                    "Contents": "",
+            //                    "Alias": "testcert",
+            //                    "PrivateKeyPassword": "..."
+            //                },
+            //                "JobCancelled": false,
+            //                "ServerError": null,
+            //                "JobHistoryId": 28,
+            //                "RequestStatus": 1,
+            //                "ServerUsername": "joe",
+            //                "ServerPassword": "v",
+            //                "UseSSL": true,
+            //                "JobProperties": {
+            //                    "CommaSeparatedSansString": "testwritecert.keyfactor.lab,testcert.keyfactor.lab",
+            //                    "CertColorMultipleChoice": "red",
+            //                    "ForTestingOnlyBool": true,
+            //                    "PrivateCertDetailsSecret": "secretcert"
+            //                },
+            //                "JobTypeId": "00000000-0000-0000-0000-000000000000",
+            //                "JobId": "4234344b-a254-45b5-b233-d70aedd187ea",
+            //                "Capability": "CertStores.SOS.Management"
+            //          }
