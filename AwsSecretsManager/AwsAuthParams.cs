@@ -40,13 +40,25 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
         public string ExternalId { get; set; }
 
         // retreived from ServerUsername in JobConfiguration
-        public string AccessKey { get; set; }
+        public string AccessKey { get; set; } // PAM resolved secret
 
         // retreived from ServerPassword in JobConfiguration
-        public string AccessSecret { get; set; }
-        
+        public string AccessSecret { get; set; }  // PAM resolved secret
+
         // retreived from ClientMachine in JobConfiguration
         public string AccountId { get; set; }
+
+        [JsonProperty("OauthPath")]
+        [DefaultValue("/oauth2/default/v1/token")]
+        public string OAuthPath { get; set; }
+
+        [JsonProperty("AwsRegions")]
+        [DefaultValue(false)]
+        public string AwsRegions { get; set; }
+
+        [JsonProperty("AwsRole")]
+        [DefaultValue(false)]
+        public string AwsRole { get; set; }
 
         public string RoleSessionName { get; set; } = "oauth-session";
         public RegionEndpoint Region { get; set; } = RegionEndpoint.USEast1;

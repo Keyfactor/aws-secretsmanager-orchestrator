@@ -8,7 +8,7 @@
 
 using System;
 
-namespace Keyfactor.Extensions.Orchestrator.AzureKeyVault
+namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
 {
     [AttributeUsage(AttributeTargets.Class, Inherited = false)]
     public class JobAttribute : Attribute

@@ -1,12 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using Keyfactor.Extensions.Orchestrator.AzureKeyVault;
 using Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs;
 using Keyfactor.Logging;
 using Keyfactor.Orchestrators.Extensions;
 using Keyfactor.Orchestrators.Extensions.Interfaces;
 using Microsoft.Extensions.Logging;
-
 
 namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
 {
@@ -18,8 +16,28 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
         public Inventory(IPAMSecretResolver resolver)
         {
             logger = LogHandler.GetClassLogger(GetType());
-            PamSecretResolver = resolver;
+            _resolver = resolver;            
         }
+
+
+        //    // Configuration StoreProperties Passed from Command for an Inventory Job have the following structure:
+        //    // { ServerUsername: "",
+        //    //   ServerPassword: "",
+        //    //   JobHistoryId: "",
+        //    //   Capability: 
+        //    //   CertificateStoreDetails: {
+        //    //      ClientMachine: "",
+        //    //      StorePath: "", // in this case, it will be "<aws region name>/<cert tag value>" where cert tag value is the value of the "KeyfactorCertificateStore" tag key.
+        //    //      StorePassword: "",
+        //    //      StoreProperties: { // CertificateStoreDetails.StoreProperties are dynamic and contain the custom store properties we define in the store type
+        //    //          StoreNameString: "",
+        //    //          ForTestingOnlyBool: false,
+        //    //          CollectionNameMultipleChoice: "",
+        //    //          PrivateDetailsSecret: ""
+        //    //      }
+        //    //   }
+        //    // } 
+
 
         //Job Entry Point
         public JobResult ProcessJob(InventoryJobConfiguration config, SubmitInventoryUpdate submitInventory)
@@ -27,30 +45,20 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
             logger.MethodEntry();
             logger.LogTrace($"Received new inventory job. Job ID = {config.JobId}");
 
-            logger.LogTrace($"calling base initialize method..");
+            logger.LogTrace($"Initializing inventory job..");
 
             base.Initialize(config);
 
-            //METHOD ARGUMENTS...
-            //config - contains context information passed from KF Command to this job run:
-            //
-            // config.Server.Username, config.Server.Password - credentials for orchestrated server - use to authenticate to certificate store server.
-            //
-            // config.ServerUsername, config.ServerPassword - credentials for orchestrated server - use to authenticate to certificate store server.
-            // config.CertificateStoreDetails.ClientMachine - server name or IP address of orchestrated server
-            // config.CertificateStoreDetails.StorePath - location path of certificate store on orchestrated server
-            // config.CertificateStoreDetails.StorePassword - if the certificate store has a password, it would be passed here
-            // config.CertificateStoreDetails.Properties - JSON string containing custom store properties for this specific store type
-
-            //NLog Logging to c:\CMS\Logs\CMS_Agent_Log.txt
-            
             logger.LogDebug($"Begin Inventory...");
 
             //List<AgentCertStoreInventoryItem> is the collection that the interface expects to return from this job.  It will contain a collection of certificates found in the store along with other information about those certificates
+            
             List<CurrentInventoryItem> inventoryItems = new List<CurrentInventoryItem>();
 
             try
             {
+                var secrets = SecretsManagerClient.ListSecrets(JobParameters.StoreProperties.StorePath);
+
                 //Code logic to:
                 // 1) Connect to the orchestrated server (config.CertificateStoreDetails.ClientMachine) containing the certificate store to be inventoried (config.CertificateStoreDetails.StorePath)
                 // 2) Custom logic to retrieve certificates from certificate store.
