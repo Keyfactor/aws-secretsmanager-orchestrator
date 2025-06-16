@@ -1,15 +1,12 @@
 ﻿using Amazon.SecretsManager.Model;
-using Keyfactor.AnyAgent.AwsCertificateManager;
 using Keyfactor.Logging;
 using Keyfactor.Orchestrators.Common.Enums;
 using Keyfactor.Orchestrators.Extensions;
 using Keyfactor.Orchestrators.Extensions.Interfaces;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
-using System.Text.Json.Nodes;
 
 
 namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
@@ -22,8 +19,7 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
         internal protected IPAMSecretResolver _resolver { get; set; }
 
         public virtual AwsSecretsManagerClient SecretsManagerClient { get; set; }
-        internal protected virtual AwsSecretsManagerJobParameters JobParameters { get; set; }
-        internal AuthUtilities AuthUtilities { get; set; }
+        internal protected virtual AwsSecretsManagerJobParameters JobParameters { get; set; }        
 
         // set the configuration parameters
         public virtual void Initialize(InventoryJobConfiguration config)
