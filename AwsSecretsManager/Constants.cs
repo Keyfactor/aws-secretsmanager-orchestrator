@@ -13,4 +13,10 @@
         public const string MANAGEMENT = "Management";
         public const string REENROLLMENT = "Enrollment";
     }
+
+    public static class AWSFilterParameter { 
+        public const string NAME = "name";
+        public const string TAG_KEY = "tag-key";
+        public const string TAG_VALUE = "tag-value";
+    }
 }

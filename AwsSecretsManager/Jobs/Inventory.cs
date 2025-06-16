@@ -1,10 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using Amazon.SecretsManager.Model;
+using Keyfactor.PKI;
 using Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs;
 using Keyfactor.Logging;
 using Keyfactor.Orchestrators.Extensions;
 using Keyfactor.Orchestrators.Extensions.Interfaces;
 using Microsoft.Extensions.Logging;
+using System.Security.Cryptography.X509Certificates;
 
 namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
 {
@@ -16,7 +20,7 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
         public Inventory(IPAMSecretResolver resolver)
         {
             logger = LogHandler.GetClassLogger(GetType());
-            _resolver = resolver;            
+            _resolver = resolver;
         }
 
 
@@ -26,14 +30,12 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
         //    //   JobHistoryId: "",
         //    //   Capability: 
         //    //   CertificateStoreDetails: {
-        //    //      ClientMachine: "",
-        //    //      StorePath: "", // in this case, it will be "<aws region name>/<cert tag value>" where cert tag value is the value of the "KeyfactorCertificateStore" tag key.
+        //    //      ClientMachine: "aws region name",
+        //    //      StorePath: "", // the value here will be either the Tag Value or Name prefix for identifying certificates to be managed by the cert store.
         //    //      StorePassword: "",
         //    //      StoreProperties: { // CertificateStoreDetails.StoreProperties are dynamic and contain the custom store properties we define in the store type
-        //    //          StoreNameString: "",
-        //    //          ForTestingOnlyBool: false,
-        //    //          CollectionNameMultipleChoice: "",
-        //    //          PrivateDetailsSecret: ""
+        //    //          UseTags: boolean, // if true, the StorePath will be the tag value, and the required field "TagName" should be populated.
+        //    //          TagName: false // the name of the tag to use for identifying the certs to be managed
         //    //      }
         //    //   }
         //    // } 
@@ -43,21 +45,115 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
         public JobResult ProcessJob(InventoryJobConfiguration config, SubmitInventoryUpdate submitInventory)
         {
             logger.MethodEntry();
-            logger.LogTrace($"Received new inventory job. Job ID = {config.JobId}");
+            logger.LogTrace($"received new inventory job. Job ID = {config.JobId}");
 
-            logger.LogTrace($"Initializing inventory job..");
+            logger.LogTrace($"initializing inventory job..");
 
             base.Initialize(config);
 
-            logger.LogDebug($"Begin Inventory...");
+            logger.LogDebug($"begin Inventory...");
 
             //List<AgentCertStoreInventoryItem> is the collection that the interface expects to return from this job.  It will contain a collection of certificates found in the store along with other information about those certificates
-            
+
             List<CurrentInventoryItem> inventoryItems = new List<CurrentInventoryItem>();
 
             try
             {
-                var secrets = SecretsManagerClient.ListSecrets(JobParameters.StoreProperties.StorePath);
+                // first, compose filter from parameters
+
+                var filters = new List<Filter>();
+
+                if (JobParameters.StoreProperties.UseTags) // we generate a filter based on found tag name and value
+                {
+                    logger.LogTrace("using tags for identification, setting the tag filter values..");
+                    var tagNameFilter = new Filter()
+                    {
+                        Key = AWSFilterParameter.TAG_KEY,
+                        Values = new List<string>() { JobParameters.StoreProperties.TagName }
+                    };
+
+                    var tagValueFilter = new Filter()
+                    {
+                        Key = AWSFilterParameter.TAG_VALUE,
+                        Values = new List<string> { JobParameters.StoreProperties.TagValue }
+                    };
+
+                    filters.Add(tagNameFilter);
+                    filters.Add(tagValueFilter);
+                }
+                else
+                {
+                    logger.LogTrace("using path prefix for identification, setting the secret name filter value..");
+
+                    var pathFilter = new Filter()
+                    {
+                        Key = AWSFilterParameter.NAME,
+                        Values = new List<string>() { JobParameters.StoreProperties.StorePath }
+                    };
+
+                    filters.Add(pathFilter);
+                }
+
+                logger.LogTrace($"determined cert filter criteria to be: ");
+
+                filters.ForEach(filter => {
+                    logger.LogTrace($"filter key: {filter.Key}");
+                    logger.LogTrace($"filter value: {filter.Values.First()}");                
+                });
+
+                // then get the secrets
+
+                var secrets = SecretsManagerClient.ListSecrets(filters).Result;
+
+                // check for validity and parse-ability
+
+                var warningCount = 0;
+                
+                foreach (var potentialCert in secrets)
+                {
+                    logger.LogTrace($"parsing secret named: {potentialCert.Name}");
+
+                    var includeChain = false;
+                    try
+                    {
+                        // try pemtoder
+                        var certBytes = PKI.PEM.PemUtilities.PEMToDER(potentialCert.SecretString);
+
+                        // check for chain level (multiple certs)
+
+                        var certCount = potentialCert.SecretString.Split("-----BEGIN CERTIFICATE-----").Length - 1;
+
+                        includeChain = certCount > 1;
+
+                        logger.LogTrace($"found {certCount} headers.  {(includeChain ? " multiple headers; chain implied" : " single certificate, no chain.")}");
+
+                        logger.LogTrace("successfully parsed PEM string");
+                    }
+                    catch (Exception ex)
+                    {
+                        // it failed; log a warning and continue.
+
+                        logger.LogWarning("Unable to perform PEM to DER conversion on cert contents.");
+                        logger.LogWarning("cert contents:");
+                        logger.LogWarning($"\n{potentialCert.SecretString}");
+                        warningCount++;
+                        continue;
+                    }
+
+                    inventoryItems.Add(new CurrentInventoryItem()
+                    {
+                        Alias = potentialCert.Name, // trim prefix?
+                        Certificates = new string[] { potentialCert.SecretString },
+                        PrivateKeyEntry = false,
+                        UseChainLevel = includeChain
+                    });
+                }
+
+                var successMessage = $"Successfully processed {inventoryItems.Count} certificates. ";
+                if (warningCount > 0) successMessage += $"\n{warningCount} certificate(s) could not be processed.\nReview the logs on the orchestrator for more details.";
+                if (submitInventory.Invoke(inventoryItems)) return Success(successMessage);
+                return Failure(new Exception("Inventory Job Failed.  Review the orchestrator logs for more details."), "Inventory");
+
 
                 //Code logic to:
                 // 1) Connect to the orchestrated server (config.CertificateStoreDetails.ClientMachine) containing the certificate store to be inventoried (config.CertificateStoreDetails.StorePath)

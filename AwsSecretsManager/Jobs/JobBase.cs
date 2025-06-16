@@ -1,11 +1,13 @@
 ﻿using Amazon.SecretsManager.Model;
 using Keyfactor.AnyAgent.AwsCertificateManager;
 using Keyfactor.Logging;
+using Keyfactor.Orchestrators.Common.Enums;
 using Keyfactor.Orchestrators.Extensions;
 using Keyfactor.Orchestrators.Extensions.Interfaces;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
 using System.Text.Json.Nodes;
 
@@ -32,6 +34,8 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
             JobParameters = new AwsSecretsManagerJobParameters();
             JobParameters.JobType = "Inventory";
             JobParameters.JobId = config.JobId;
+            JobParameters.JobHistoryId = config.JobHistoryId;
+
             JobParameters.StoreProperties.AwsRegion = config.CertificateStoreDetails.ClientMachine;
             JobParameters.StoreProperties.StorePath = config.CertificateStoreDetails.StorePath;
 
@@ -39,7 +43,30 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
             JobParameters.StoreProperties.AuthAccessKeyId = _resolver.Resolve(config.ServerUsername);
             JobParameters.StoreProperties.AuthSecret = _resolver.Resolve(config.ServerPassword);
 
-            logger.LogTrace("parameter initialization for Inventory job complete");
+            logger.LogTrace("determining identification strategy for this cert store..");
+            JobParameters.StoreProperties.UseTags = Boolean.Parse(config.JobProperties["UseTags"].ToString());
+
+            if (JobParameters.StoreProperties.UseTags)
+            {
+                logger.LogTrace("using tag name and tag value (from store path)");
+                JobParameters.StoreProperties.TagName = config.JobProperties["TagName"].ToString();
+                JobParameters.StoreProperties.TagValue = config.CertificateStoreDetails.StorePath;
+
+                if (string.IsNullOrEmpty(JobParameters.StoreProperties.TagName))
+                {
+                    logger.LogError("UseTags is true, but not tag name provided");
+                    throw new MissingFieldException("TagName");
+                }
+            }
+            else
+            {
+                logger.LogTrace("using path prefix (from store path) in secret name");
+            }
+
+            logger.LogTrace("initializing AWS client..");
+            SecretsManagerClient.InitializeClient(JobParameters.StoreProperties.AuthAccessKeyId, JobParameters.StoreProperties.AuthSecret, JobParameters.StoreProperties.AwsRegion);
+
+            logger.LogTrace("Inventory job initialization complete");
 
             logger.MethodExit();
         }
@@ -105,9 +132,61 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
             JobParameters.CertProperties.Thumbprint = config.JobCertificate.Thumbprint;
             JobParameters.CertProperties.Contents = config.JobCertificate.Contents;
 
+            logger.LogTrace("determining identification strategy for this cert store..");
+            var useTags = Boolean.Parse(config.JobProperties["UseTags"].ToString());
+
+            if (useTags)
+            {
+                logger.LogTrace("using tag name and tag value (from store path)");
+                JobParameters.StoreProperties.TagName = config.JobProperties["TagName"].ToString();
+                JobParameters.StoreProperties.TagValue = config.CertificateStoreDetails.StorePath;
+
+                if (string.IsNullOrEmpty(JobParameters.StoreProperties.TagName))
+                {
+                    logger.LogError("UseTags is true, but not tag name provided");
+                    throw new MissingFieldException("TagName");
+                }
+            }
+            else
+            {
+                logger.LogTrace("using path prefix (from store path) in secret name");
+            }
+
             logger.LogTrace("parameter initialization for Management job complete");
 
             logger.MethodExit();
+        }
+
+        private protected JobResult Success(string message = null)
+        {
+            return new JobResult()
+            {
+                Result = OrchestratorJobStatusJobResult.Success,
+                JobHistoryId = JobParameters.JobHistoryId,
+                FailureMessage = message
+            };
+        }
+
+        private protected JobResult Failure(Exception exception, string jobSection)
+        {
+            string message = FlattenException(exception);
+            logger.LogError($"Error performing {jobSection} in {ExtensionName} - {message}");
+            return new JobResult()
+            {
+                Result = OrchestratorJobStatusJobResult.Failure,
+                FailureMessage = message,
+                JobHistoryId = JobParameters.JobHistoryId
+            };
+        }
+
+        private string FlattenException(Exception ex)
+        {
+            string returnMessage = ex.Message;
+            if (ex.InnerException != null)
+            {
+                returnMessage += (" - " + FlattenException(ex.InnerException));
+            }
+            return returnMessage;
         }
     }
 }

@@ -26,43 +26,33 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
 
             var regionEndpoint = Amazon.RegionEndpoint.GetBySystemName(region); // this will return it's best guess no matter what.. never null
 
-            logger.LogTrace($"resolved region endpoint {regionEndpoint.SystemName}");            
-            
+            logger.LogTrace($"resolved region endpoint {regionEndpoint.SystemName}");
+
             _secretManagerClient = new AmazonSecretsManagerClient(accessKey, secret, regionEndpoint);
 
-
-            // additional configuration goes here
-            //_secretManagerClient
+            logger.MethodExit();
         }
 
         /// <summary>
         /// Lists all secrets that contain the provided Tag Key value.  
         /// We retreive these in batches of maximum 20 size and loop until we've gotten them all.
         /// </summary>
-        public async Task<List<SecretValueEntry>> ListSecrets(string pathFilter)
+        public async Task<List<SecretValueEntry>> ListSecrets(List<Filter> filters)
         {
             logger.MethodEntry();
 
             var results = new List<SecretValueEntry>();
 
-            // define filter for the path
-
-            var f = new Filter 
-            {
-                Key = "name",
-                Values = new List<string> { pathFilter }
-            };
-
             string nextToken = null;
 
-            logger.LogTrace($"begin batch retreival of secrets with path prefix equal to {pathFilter}");
+            logger.LogTrace($"begin batch retreival of secrets..");
             try
             {
                 do
                 {
                     var request = new BatchGetSecretValueRequest
                     {
-                        Filters = new List<Filter> { f },
+                        Filters = filters,
                         MaxResults = 20,
                     };
                     if (nextToken != null)
@@ -86,13 +76,17 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
                 logger.LogError($"There was an error when attempting to retreive the list of secrets: {LogHandler.FlattenException(ex)}");
                 throw;
             }
+            finally
+            {
+                logger.MethodExit();
+            }
         }
 
-        public async Task AddSecret() {
+        public async Task AddSecret(string name, Dictionary<string, string> tags, string contents)
+        {
             //var req = new CreateSecretRequest();
             //req.Tags = new List<Tag>() { new Tag() { k} }
             //_secretManagerClient.CreateSecretAsync(new CreateSecretRequest())
-        
         }
 
         public async Task RemoveSecret() { }

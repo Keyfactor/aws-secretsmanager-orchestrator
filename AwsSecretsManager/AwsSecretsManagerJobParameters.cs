@@ -10,7 +10,7 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
     {
         public string JobType { get; set; }
         public Guid JobId { get; set; }
-
+        public long JobHistoryId { get; set; }
 
         public CertStoreProperties StoreProperties { get; set; }
         public CertProperties CertProperties { get; set; }
@@ -30,14 +30,14 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
         [JsonProperty("ServerPassword")]
         public string AuthSecret { get; set; } // PAM resolvable secret value for IAM authentication
 
+        public bool UseTags { get; set; }
 
+        [JsonProperty("TagName")]
+        public string TagName { get; set; } // The name of the tag to use to identify certs that should be managed by this cert store
+
+        [JsonProperty("TagValue")]
+        public string TagValue { get; set; } // The value of the tag to use to identify certs that should be managed by this cert store; from StorePath
     }
-    //        "JobCertificate": {
-            //                    "Thumbprint": null,
-            //                    "Contents": "",
-            //                    "Alias": "testcert",
-            //                    "PrivateKeyPassword": "..."
-
 
     public class CertProperties
     {
