@@ -1,13 +1,15 @@
 ﻿using Keyfactor.Orchestrators.Extensions.Interfaces;
 using Microsoft.Extensions.Logging;
+using Org.BouncyCastle.OpenSsl;
 using Org.BouncyCastle.Pkcs;
 using System;
 using System.IO;
+using System.Linq;
 using System.Text.Json.Nodes;
 
 namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
 {
-    internal static class HelperMethods
+    internal static class Helpers
     {
         internal static string ResolvePAMField(IPAMSecretResolver resolver, ILogger logger, string name, string key)
         {
@@ -35,6 +37,48 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
                 return false;
             }
             return true;
+        }
+
+        public static string GetPemStringFromPfx(string base64Pfx, string pfxPassword)
+        {
+            byte[] pfxBytes = Convert.FromBase64String(base64Pfx); // 1. Decode base64
+
+            try
+            {
+                using (var memoryStream = new MemoryStream(pfxBytes))
+                {
+                    var builder = new Pkcs12StoreBuilder();
+
+                    var store = builder.Build();
+                    store.Load(memoryStream, pfxPassword.ToCharArray());
+
+                    var alias = store.Aliases.First().ToString();
+                    var certEntry = store.GetCertificate(alias);
+                    var keyEntry = store.GetKey(alias);
+                    var privateKey = keyEntry.Key;
+
+
+                    // 4. Use PemWriter to write the certificate and private key to PEM format
+                    using (var stringWriter = new StringWriter())
+                    {
+                        PemWriter pemWriter = new PemWriter(stringWriter);
+
+                        pemWriter.WriteObject(certEntry);
+                        pemWriter.WriteObject(privateKey);
+                        pemWriter.Writer.Flush();
+
+                        // 5. Get the PEM string
+                        return stringWriter.ToString();
+                    }
+                }
+
+            }
+            catch (Exception ex)
+            {
+                // Handle exceptions appropriately
+                Console.WriteLine($"Error converting PFX to PEM: {ex.Message}");
+                return null;
+            }
         }
 
         public static byte[] ConvertPfxToPasswordlessPkcs12(string base64Pfx, string pfxPassword)

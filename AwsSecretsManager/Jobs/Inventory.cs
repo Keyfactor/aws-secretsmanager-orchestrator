@@ -2,68 +2,40 @@
 using System.Collections.Generic;
 using System.Linq;
 using Amazon.SecretsManager.Model;
-using Keyfactor.PKI;
-using Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs;
 using Keyfactor.Logging;
 using Keyfactor.Orchestrators.Extensions;
 using Keyfactor.Orchestrators.Extensions.Interfaces;
 using Microsoft.Extensions.Logging;
-using System.Security.Cryptography.X509Certificates;
 
-namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
+namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
 {
     // The Inventory class implementes IAgentJobExtension and is meant to find all of the certificates in a given certificate store on a given server
     //  and return those certificates back to Keyfactor for storing in its database.  Private keys will NOT be passed back to Keyfactor Command 
     [Job(KeyfactorJobType.INVENTORY)]
     public class Inventory : JobBase<Inventory>, IInventoryJobExtension
     {
-        public Inventory(IPAMSecretResolver resolver)
-        {
-            logger = LogHandler.GetClassLogger(GetType());
-            _resolver = resolver;
-        }
-
-
-        //    // Configuration StoreProperties Passed from Command for an Inventory Job have the following structure:
-        //    // { ServerUsername: "",
-        //    //   ServerPassword: "",
-        //    //   JobHistoryId: "",
-        //    //   Capability: 
-        //    //   CertificateStoreDetails: {
-        //    //      ClientMachine: "aws region name",
-        //    //      StorePath: "", // the value here will be either the Tag Value or Name prefix for identifying certificates to be managed by the cert store.
-        //    //      StorePassword: "",
-        //    //      StoreProperties: { // CertificateStoreDetails.StoreProperties are dynamic and contain the custom store properties we define in the store type
-        //    //          UseTags: boolean, // if true, the StorePath will be the tag value, and the required field "TagName" should be populated.
-        //    //          TagName: false // the name of the tag to use for identifying the certs to be managed
-        //    //      }
-        //    //   }
-        //    // } 
-
+        public Inventory(IPAMSecretResolver resolver) : base(resolver) { }
 
         //Job Entry Point
         public JobResult ProcessJob(InventoryJobConfiguration config, SubmitInventoryUpdate submitInventory)
         {
             logger.MethodEntry();
             logger.LogTrace($"received new inventory job. Job ID = {config.JobId}");
-
             logger.LogTrace($"initializing inventory job..");
 
             base.Initialize(config);
 
             logger.LogDebug($"begin Inventory...");
 
-            //List<AgentCertStoreInventoryItem> is the collection that the interface expects to return from this job.  It will contain a collection of certificates found in the store along with other information about those certificates
-
             List<CurrentInventoryItem> inventoryItems = new List<CurrentInventoryItem>();
 
             try
             {
-                // first, compose filter from parameters
+                // first, we compose filter criteria from parameters
 
                 var filters = new List<Filter>();
 
-                if (JobParameters.StoreProperties.UseTags) // we generate a filter based on found tag name and value
+                if (JobParameters.StoreProperties.UseTags) // we will generate a filter based on provided tag name and value
                 {
                     logger.LogTrace("using tags for identification, setting the tag filter values..");
                     var tagNameFilter = new Filter()
@@ -83,32 +55,41 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
                 }
                 else
                 {
-                    logger.LogTrace("using path prefix for identification, setting the secret name filter value..");
-
-                    var pathFilter = new Filter()
+                    if (JobParameters.StoreProperties.UsePrefix)
                     {
-                        Key = AWSFilterParameter.NAME,
-                        Values = new List<string>() { JobParameters.StoreProperties.StorePath }
-                    };
+                        logger.LogTrace("using path prefix for identification, setting the secret name filter value..");
 
-                    filters.Add(pathFilter);
+                        var pathFilter = new Filter()
+                        {
+                            Key = AWSFilterParameter.NAME, // searches prefix (not full match) by default
+                            Values = new List<string>() { JobParameters.StoreProperties.NamePrefix }
+                        };
+
+                        filters.Add(pathFilter);
+                    }
                 }
 
                 logger.LogTrace($"determined cert filter criteria to be: ");
 
-                filters.ForEach(filter => {
+                if (filters.Count == 0)
+                {
+                    logger.LogTrace("no filter; all certificates in the region that are available to the authenticating identity");
+                }
+
+                filters.ForEach(filter =>
+                {
                     logger.LogTrace($"filter key: {filter.Key}");
-                    logger.LogTrace($"filter value: {filter.Values.First()}");                
+                    logger.LogTrace($"filter value: {filter.Values.First()}");
                 });
 
-                // then get the secrets
+                // now get the secrets
 
                 var secrets = SecretsManagerClient.ListSecrets(filters).Result;
 
                 // check for validity and parse-ability
 
                 var warningCount = 0;
-                
+
                 foreach (var potentialCert in secrets)
                 {
                     logger.LogTrace($"parsing secret named: {potentialCert.Name}");
@@ -133,9 +114,10 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
                     {
                         // it failed; log a warning and continue.
 
-                        logger.LogWarning("Unable to perform PEM to DER conversion on cert contents.");
+                        logger.LogWarning($"Unable to perform PEM to DER conversion on secret named {potentialCert.Name}.");
                         logger.LogWarning("cert contents:");
-                        logger.LogWarning($"\n{potentialCert.SecretString}");
+                        logger.LogWarning($"\n{potentialCert.SecretString}\n");
+                        logger.LogWarning($"Exception: {ex.Message}");
                         warningCount++;
                         continue;
                     }
@@ -147,54 +129,35 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
                         PrivateKeyEntry = false,
                         UseChainLevel = includeChain
                     });
+
+                } // end cert evaluation loop
+
+                var succeeded = true;
+                var resultMessage = $"Successfully processed {inventoryItems.Count} certificates. ";
+                JobResult result = SuccessJobResult(resultMessage);
+
+                // if there was a mix of errors and successful retrieval..
+                if (warningCount > 0 && inventoryItems.Count > 0)
+                {
+                    resultMessage += $"\n{warningCount} certificate(s) could not be processed.\nReview the logs on the orchestrator for more details.";
+                    result = WarningJobResult(resultMessage);
+                    succeeded = true;
                 }
 
-                var successMessage = $"Successfully processed {inventoryItems.Count} certificates. ";
-                if (warningCount > 0) successMessage += $"\n{warningCount} certificate(s) could not be processed.\nReview the logs on the orchestrator for more details.";
-                if (submitInventory.Invoke(inventoryItems)) return Success(successMessage);
-                return Failure(new Exception("Inventory Job Failed.  Review the orchestrator logs for more details."), "Inventory");
+                // if there were only failed attempts we do not count as successful
+                if (warningCount > 0 && inventoryItems.Count == 0)
+                {
+                    result = FailureJobResult($"{warningCount} certificate(s) could not be processed.\nReview the logs on the orchestrator for more details.");
+                    succeeded = false;
+                }
 
+                if (succeeded && submitInventory.Invoke(inventoryItems)) return result;
 
-                //Code logic to:
-                // 1) Connect to the orchestrated server (config.CertificateStoreDetails.ClientMachine) containing the certificate store to be inventoried (config.CertificateStoreDetails.StorePath)
-                // 2) Custom logic to retrieve certificates from certificate store.
-                // 3) Add certificates (no private keys) to the collection below.  If multiple certs in a store comprise a chain, the Certificates array will house multiple certs per InventoryItem.  If multiple certs
-                //     in a store comprise separate unrelated certs, there will be one InventoryItem object created per certificate.
-
-                //**** Will need to uncomment the block below and code to the extension's specific needs.  This builds the collection of certificates and related information that will be passed back to the KF Orchestrator service and then Command.
-                //inventoryItems.Add(new AgentCertStoreInventoryItem()
-                //{
-                //    ItemStatus = OrchestratorInventoryItemStatus.Unknown, //There are other statuses, but Command can determine how to handle new vs modified certificates
-                //    Alias = {valueRepresentingChainIdentifier}
-                //    PrivateKeyEntry = true|false //You will not pass the private key back, but you can identify if the main certificate of the chain contains a private key in the store
-                //    UseChainLevel = true|false,  //true if Certificates will contain > 1 certificate, main cert => intermediate CA cert => root CA cert.  false if Certificates will contain an array of 1 certificate
-                //    Certificates = //Array of single X509 certificates in Base64 string format (certificates if chain, single cert if not), something like:
-                //    ****************************
-                //          foreach(X509Certificate2 certificate in certificates)
-                //              certList.Add(Convert.ToBase64String(certificate.Export(X509ContentType.Cert)));
-                //              certList.ToArray();
-                //    ****************************
-                //});
-
+                return FailureJobResult("Inventory Job callback failed.  Review the orchestrator logs for more details.");
             }
             catch (Exception ex)
             {
-                //Status: 2=Success, 3=Warning, 4=Error
-                return new JobResult() { Result = Keyfactor.Orchestrators.Common.Enums.OrchestratorJobStatusJobResult.Failure, JobHistoryId = config.JobHistoryId, FailureMessage = "Custom message you want to show to show up as the error message in Job History in KF Command" };
-            }
-
-            try
-            {
-                //Sends inventoried certificates back to KF Command
-                submitInventory.Invoke(inventoryItems);
-                //Status: 2=Success, 3=Warning, 4=Error
-                return new JobResult() { Result = Keyfactor.Orchestrators.Common.Enums.OrchestratorJobStatusJobResult.Success, JobHistoryId = config.JobHistoryId };
-            }
-            catch (Exception ex)
-            {
-                // NOTE: if the cause of the submitInventory.Invoke exception is a communication issue between the Orchestrator server and the Command server, the job status returned here
-                //  may not be reflected in Keyfactor Command.
-                return new JobResult() { Result = Keyfactor.Orchestrators.Common.Enums.OrchestratorJobStatusJobResult.Failure, JobHistoryId = config.JobHistoryId, FailureMessage = "Custom message you want to show to show up as the error message in Job History in KF Command" };
+                return FailureJobResult($"Error performing Inventory job: {ex.Message}\nReview the orchestrator logs for more details.");
             }
         }
     }

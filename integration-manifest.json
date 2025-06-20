@@ -20,14 +20,24 @@
           },
           "Properties": [
             {
-              "Name": "UseEC2AssumeRole",
-              "DisplayName": "Assume new Account / Role in EC2",
+              "Name": "UseDefaultSdkAuth",
+              "DisplayName": "Use Default SDK Auth",
               "Type": "Bool",
               "DependsOn": "",
               "DefaultValue": "false",
               "Required": true,
               "IsPAMEligible": false,
-              "Description": "A switch to enable the store to assume a new Account ID and Role when using EC2 credentials"
+              "Description": "A switch to enable the store to use Default SDK credentials"
+            },
+            {
+              "Name": "DefaultSdkAssumeRole",
+              "DisplayName": "Assume new Role using Default SDK Auth",
+              "Type": "Bool",
+              "DependsOn": "UseDefaultSdkAuth",
+              "DefaultValue": "false",
+              "Required": false,
+              "IsPAMEligible": false,
+              "Description": "A switch to enable the store to assume a new Role when using Default SDK credentials"
             },
             {
               "Name": "UseOAuth",
@@ -37,27 +47,7 @@
               "DefaultValue": "false",
               "Required": true,
               "IsPAMEligible": false,
-              "Description": "A switch to enable the store to use an OAuth provider workflow to authenticate with AWS ACM"
-            },
-            {
-              "Name": "UseIAM",
-              "DisplayName": "Use IAM User Auth",
-              "Type": "Bool",
-              "DependsOn": "",
-              "DefaultValue": "false",
-              "Required": true,
-              "IsPAMEligible": false,
-              "Description": "A switch to enable the store to use IAM User auth to assume a role when authenticating with AWS ACM"
-            },
-            {
-              "Name": "EC2AssumeRole",
-              "DisplayName": "AWS Role to Assume (EC2)",
-              "Type": "String",
-              "DependsOn": "UseEC2AssumeRole",
-              "DefaultValue": "",
-              "Required": false,
-              "IsPAMEligible": false,
-              "Description": "The AWS Role to assume using the EC2 instance credentials"
+              "Description": "A switch to enable the store to use an OAuth provider workflow to authenticate with AWS"
             },
             {
               "Name": "OAuthScope",
@@ -90,24 +80,54 @@
               "Description": "An optional parameter sts:ExternalId to pass with Assume Role calls"
             },
             {
-              "Name": "IAMAssumeRole",
-              "DisplayName": "AWS Role to Assume (IAM)",
-              "Type": "String",
-              "DependsOn": "UseIAM",
+              "Name": "OAuthClientId",
+              "DisplayName": "OAuth Client ID",
+              "Type": "Secret",
+              "DependsOn": "",
               "DefaultValue": "",
               "Required": false,
-              "IsPAMEligible": false,
-              "Description": "The AWS Role to assume as the IAM User."
+              "IsPAMEligible": true,
+              "Description": "The Client ID for OAuth."
             },
             {
-              "Name": "OAuthAssumeRole",
-              "DisplayName": "AWS Role to Assume (OAuth)",
-              "Type": "String",
-              "DependsOn": "UseOAuth",
+              "Name": "OAuthClientSecret",
+              "DisplayName": "OAuth Client Secret",
+              "Type": "Secret",
+              "DependsOn": "",
               "DefaultValue": "",
               "Required": false,
+              "IsPAMEligible": true,
+              "Description": "The Client Secret for OAuth."
+            },
+            {
+              "Name": "UseIAM",
+              "DisplayName": "Use IAM User Auth",
+              "Type": "Bool",
+              "DependsOn": "",
+              "DefaultValue": "false",
+              "Required": true,
               "IsPAMEligible": false,
-              "Description": "The AWS Role to assume after getting an OAuth token."
+              "Description": "A switch to enable the store to use IAM User auth to assume a role when authenticating with AWS"
+            },
+            {
+              "Name": "IAMUserAccessKey",
+              "DisplayName": "IAM User Access Key",
+              "Type": "Secret",
+              "DependsOn": "",
+              "DefaultValue": "",
+              "Required": false,
+              "IsPAMEligible": true,
+              "Description": "The AWS Access Key for an IAM User"
+            },
+            {
+              "Name": "IAMUserAccessSecret",
+              "DisplayName": "IAM User Access Secret",
+              "Type": "Secret",
+              "DependsOn": "",
+              "DefaultValue": "",
+              "Required": false,
+              "IsPAMEligible": true,
+              "Description": "The AWS Access Secret for an IAM User."
             },
             {
               "Name": "ExternalId",

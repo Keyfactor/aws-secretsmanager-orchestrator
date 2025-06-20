@@ -1,16 +1,19 @@
 ﻿using Amazon.SecretsManager;
 using Amazon.SecretsManager.Model;
+using Keyfactor.Extensions.Aws;
+using Keyfactor.Extensions.Aws.Models;
 using Keyfactor.Logging;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
 {
     public class AwsSecretsManagerClient
     {
-        private ILogger logger;
+        private Microsoft.Extensions.Logging.ILogger logger;
         private IAmazonSecretsManager _secretManagerClient { get; set; }
 
         public AwsSecretsManagerClient()
@@ -18,17 +21,29 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
             logger = LogHandler.GetClassLogger(GetType());
         }
 
-        public void InitializeClient(string accessKey, string secret, string region)
+        public void InitializeClient(AuthenticationParameters authParams, AwsAuthUtility authUtility)
         {
             logger.MethodEntry();
 
-            logger.LogTrace($"getting the region endpoint from the string '{region}'");
+            logger.LogTrace($"getting the region endpoint from the string '{authParams.Region}'");
 
-            var regionEndpoint = Amazon.RegionEndpoint.GetBySystemName(region); // this will return it's best guess no matter what.. never null
+            var regionEndpoint = Amazon.RegionEndpoint.GetBySystemName(authParams.Region); // this will return it's best guess no matter what.. never null
 
             logger.LogTrace($"resolved region endpoint {regionEndpoint.SystemName}");
 
-            _secretManagerClient = new AmazonSecretsManagerClient(accessKey, secret, regionEndpoint);
+            logger.LogTrace("Resolving AWS Credentials object.");
+            AwsExtensionCredential providedCredentials;
+            try
+            {
+                providedCredentials = authUtility.GetCredentials(authParams);
+            }
+            catch (Exception)
+            {
+                logger.LogError("An error occurred while trying to get AWS Credentials");
+                throw;
+            }
+
+            _secretManagerClient = new AmazonSecretsManagerClient(providedCredentials.GetAwsCredentialObject());
 
             logger.MethodExit();
         }
@@ -82,15 +97,57 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
             }
         }
 
-        public async Task AddSecret(string name, Dictionary<string, string> tags, string contents)
+        public async Task<string> AddSecret(CertStoreProperties storeProps, CertProperties certProps)
         {
-            //var req = new CreateSecretRequest();
-            //req.Tags = new List<Tag>() { new Tag() { k} }
-            //_secretManagerClient.CreateSecretAsync(new CreateSecretRequest())
+            logger.MethodEntry();
+
+            var req = new CreateSecretRequest();
+
+            // determine name, including any configured prefix
+
+            var prefix = storeProps.NamePrefix;
+
+            req.Name = string.IsNullOrEmpty(storeProps.NamePrefix) ? storeProps.NamePrefix + "/" + certProps.Alias : certProps.Alias;
+
+            logger.LogTrace($"the alias is {certProps.Alias}, resolved the secret name to be {req.Name}");
+
+            // include any provided tags
+            var tags = certProps.Tags?.Select(t => new Tag { Key = t.Key, Value = t.Value })?.ToList();
+            if (tags.Any()) req.Tags = tags;
+
+            // include any explicit encryption key ID
+            if (!string.IsNullOrEmpty(certProps.KmsKeyId)) req.KmsKeyId = certProps.KmsKeyId;
+
+            // include any additional replica regions
+            if (certProps.ReplicaRegions != null && certProps.ReplicaRegions.Any())
+            {
+                req.AddReplicaRegions = certProps.ReplicaRegions;
+            }
+
+            CreateSecretResponse resp;
+
+            try
+            {
+                logger.LogTrace($"sending request to AWS..");
+                resp = await _secretManagerClient.CreateSecretAsync(req);
+                logger.LogTrace($"successfully submitted create secret request.\nARN: {resp.ARN}\nversion ID: {resp.VersionId}");
+            }
+            catch (Exception ex)
+            {
+                logger.LogError($"an error occurred when trying to add the certificate.\n{ex.Message}");
+                throw;
+            }
+            finally
+            {
+                logger.MethodExit();
+            }
+
+            return resp?.ARN;
         }
 
-        public async Task RemoveSecret() { }
-
-
+        public async Task RemoveSecret()
+        {
+            throw new NotImplementedException();
+        }
     }
 }
