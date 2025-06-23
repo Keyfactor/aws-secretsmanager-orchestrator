@@ -1,4 +1,12 @@
-﻿using Amazon.SecretsManager;
+﻿
+//  Copyright 2025 Keyfactor
+//  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License.
+//  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+//  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions
+//  and limitations under the License.
+
+using Amazon.SecretsManager;
 using Amazon.SecretsManager.Model;
 using Keyfactor.Extensions.Aws;
 using Keyfactor.Extensions.Aws.Models;
@@ -145,9 +153,35 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
             return resp?.ARN;
         }
 
-        public async Task RemoveSecret()
+        public async Task RemoveSecret(CertStoreProperties storeProps, CertProperties certProps)
         {
-            throw new NotImplementedException();
+            logger.MethodEntry();
+
+            var req = new DeleteSecretRequest();
+            DeleteSecretResponse resp;
+            
+            try 
+            {
+                var prefix = storeProps.NamePrefix;
+
+                req.SecretId = string.IsNullOrEmpty(storeProps.NamePrefix) ? storeProps.NamePrefix + "/" + certProps.Alias : certProps.Alias;
+
+                logger.LogTrace($"resolved secret id to {req.SecretId}");
+
+                logger.LogTrace($"submitting request to delete secret..");
+
+                await _secretManagerClient.DeleteSecretAsync(req);
+                
+            }
+            catch (Exception ex) 
+            {
+                logger.LogError($"an error occurred when attempting to delete the secret.. {ex.Message}");
+                throw;
+            }
+            finally 
+            { 
+                logger.MethodExit();
+            }
         }
     }
 }
