@@ -12,6 +12,7 @@ using Keyfactor.Orchestrators.Extensions;
 using Keyfactor.Orchestrators.Common.Enums;
 using Microsoft.Extensions.Logging;
 using Keyfactor.Orchestrators.Extensions.Interfaces;
+using System.Threading.Tasks;
 
 
 namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
@@ -23,19 +24,18 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
 
         public JobResult ProcessJob(ManagementJobConfiguration config)
         {
-            logger.MethodEntry();
+            _logger.MethodEntry();
             var jobType = config.OperationType.ToString();
 
-            logger.LogTrace($"received new Management > {jobType} job. Job ID = {config.JobId}");
-            logger.LogTrace($"initializing Management > {jobType} job..");
+            _logger.LogTrace($"received new Management > {jobType} job. Job ID = {config.JobId}");
+            _logger.LogTrace($"initializing Management > {jobType} job..");
 
             base.Initialize(config);
 
-            logger.LogDebug($"begin Management > {jobType}...");
+            _logger.LogDebug($"begin Management > {jobType}...");
 
             try
             {
-                //Management jobs, unlike Discovery, Inventory, and Reenrollment jobs can have 3 different purposes:
                 switch (config.OperationType)
                 {
                     case CertStoreOperationType.Add:
@@ -43,7 +43,7 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
                     case CertStoreOperationType.Remove:
                         return RemoveCertificate();
                     default:
-                        // in theory, this should never occur
+                        // this should never occur
                         return FailureJobResult($"Unsupported operation: {config.OperationType.ToString()}");
                 }
             }
@@ -51,40 +51,72 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
             {
                 //Status: 2=SuccessJobResult, 3=WarningJobResult, 4=Error
                 var msg = $"an error occurred.  Management > {config.OperationType.ToString()} job was not successful.\n{ex.Message}";
-                logger.LogError(msg);
+                _logger.LogError(msg);
                 return FailureJobResult(msg);
             }
             finally
             {
-                logger.MethodExit();
+                _logger.MethodExit();
             }
-
         }
 
+        /// <summary>
+        /// Checks for an existing secret with the same name, if exists and overwrite flag is true, replace the secret.
+        /// if overwrite is false, skip.
+        /// if no existing secret with the name exists, create a new one for the certificate.
+        /// </summary>
+        /// <returns></returns>
         public JobResult AddCertificate()
         {
-            logger.MethodEntry();
+            _logger.MethodEntry();
 
             try
             {
-                var certARN = SecretsManagerClient.AddSecret(JobParameters.StoreProperties, JobParameters.CertProperties).Result;
+                // TODO: check for existing, then check overwrite flag
+                var existing = _secretsManagerClient.GetSecret(JobParameters.SecretName);
+
+                if (existing != null) {
+                    if (!JobParameters.CertProperties.Overwrite) { // a secret with the name exists and overwrite is fales
+                        return FailureJobResult($"a secret already exists with the name '{JobParameters.SecretName}' and overwrite = false.  Certificate was not added.");
+                    }
+                    else {
+                        
+                    
+                    }
+                }
+
+                var certARN = _secretsManagerClient.AddOrUpdateSecret(JobParameters.SecretName, JobParameters.CertProperties).Result;
                 return SuccessJobResult($"Successfully enrolled certificate with alias '{JobParameters.CertProperties.Alias}'.\nARN: {certARN}");
             }
             catch (Exception ex)
             {
                 var msg = $"an error occurred when attempting to add the certificate.\n{ex.Message}";
-                logger.LogError(msg);
+                _logger.LogError(msg);
                 return FailureJobResult(msg);
             }
             finally
             {
-                logger.MethodExit();
+                _logger.MethodExit();
             }
         }
 
         public JobResult RemoveCertificate()
         {
-            throw new NotImplementedException();
+            _logger.MethodEntry();
+
+            try 
+            {
+                _logger.LogTrace($"sending request to remove secret named {JobParameters.SecretName}");
+                _secretsManagerClient.RemoveSecret(JobParameters.SecretName).RunSynchronously();
+                return SuccessJobResult();
+            }
+            catch (Exception ex) 
+            {
+                var msg = $"there was an error when attempting to remove the secret: {ex.Message}";
+                _logger.LogError(msg);
+                return FailureJobResult(msg);
+            }
+            finally { _logger.MethodExit(); }
         }
     }
 }

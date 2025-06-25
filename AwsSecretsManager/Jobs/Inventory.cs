@@ -27,13 +27,13 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
         //Job Entry Point
         public JobResult ProcessJob(InventoryJobConfiguration config, SubmitInventoryUpdate submitInventory)
         {
-            logger.MethodEntry();
-            logger.LogTrace($"received new inventory job. Job ID = {config.JobId}");
-            logger.LogTrace($"initializing inventory job..");
+            _logger.MethodEntry();
+            _logger.LogTrace($"received new inventory job. Job ID = {config.JobId}");
+            _logger.LogTrace($"initializing inventory job..");
 
             base.Initialize(config);
 
-            logger.LogDebug($"begin Inventory...");
+            _logger.LogDebug($"begin Inventory...");
 
             List<CurrentInventoryItem> inventoryItems = new List<CurrentInventoryItem>();
 
@@ -45,7 +45,7 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
 
                 if (JobParameters.StoreProperties.UseTags) // we will generate a filter based on provided tag name and value
                 {
-                    logger.LogTrace("using tags for identification, setting the tag filter values..");
+                    _logger.LogTrace("using tags for identification, setting the tag filter values..");
                     var tagNameFilter = new Filter()
                     {
                         Key = AWSFilterParameter.TAG_KEY,
@@ -65,7 +65,7 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
                 {
                     if (JobParameters.StoreProperties.UsePrefix)
                     {
-                        logger.LogTrace("using path prefix for identification, setting the secret name filter value..");
+                        _logger.LogTrace("using path prefix for identification, setting the secret name filter value..");
 
                         var pathFilter = new Filter()
                         {
@@ -77,22 +77,22 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
                     }
                 }
 
-                logger.LogTrace($"determined cert filter criteria to be: ");
+                _logger.LogTrace($"determined cert filter criteria to be: ");
 
                 if (filters.Count == 0)
                 {
-                    logger.LogTrace("no filter; all certificates in the region that are available to the authenticating identity");
+                    _logger.LogTrace("no filter; all certificates in the region that are available to the authenticating identity");
                 }
 
                 filters.ForEach(filter =>
                 {
-                    logger.LogTrace($"filter key: {filter.Key}");
-                    logger.LogTrace($"filter value: {filter.Values.First()}");
+                    _logger.LogTrace($"filter key: {filter.Key}");
+                    _logger.LogTrace($"filter value: {filter.Values.First()}");
                 });
 
                 // now get the secrets
 
-                var secrets = SecretsManagerClient.ListSecrets(filters).Result;
+                var secrets = _secretsManagerClient.ListSecrets(filters).Result;
 
                 // check for validity and parse-ability
 
@@ -100,7 +100,7 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
 
                 foreach (var potentialCert in secrets)
                 {
-                    logger.LogTrace($"parsing secret named: {potentialCert.Name}");
+                    _logger.LogTrace($"parsing secret named: {potentialCert.Name}");
 
                     var includeChain = false;
                     try
@@ -114,18 +114,18 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
 
                         includeChain = certCount > 1;
 
-                        logger.LogTrace($"found {certCount} headers.  {(includeChain ? " multiple headers; chain implied" : " single certificate, no chain.")}");
+                        _logger.LogTrace($"found {certCount} headers.  {(includeChain ? " multiple headers; chain implied" : " single certificate, no chain.")}");
 
-                        logger.LogTrace("successfully parsed PEM string");
+                        _logger.LogTrace("successfully parsed PEM string");
                     }
                     catch (Exception ex)
                     {
                         // it failed; log a warning and continue.
 
-                        logger.LogWarning($"Unable to perform PEM to DER conversion on secret named {potentialCert.Name}.");
-                        logger.LogWarning("cert contents:");
-                        logger.LogWarning($"\n{potentialCert.SecretString}\n");
-                        logger.LogWarning($"Exception: {ex.Message}");
+                        _logger.LogWarning($"Unable to perform PEM to DER conversion on secret named {potentialCert.Name}.");
+                        _logger.LogWarning("cert contents:");
+                        _logger.LogWarning($"\n{potentialCert.SecretString}\n");
+                        _logger.LogWarning($"Exception: {ex.Message}");
                         warningCount++;
                         continue;
                     }

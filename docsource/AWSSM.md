@@ -1,115 +1,69 @@
 ## Overview 
 
-This cert store type is simply an example starting point for Universal Orchestrator Integrations.
+This AWS Secrets Manager Orchestrator extension adds the ability to manage certificates stored in AWS Secrets Manager as secrets via Keyfactor Command.
+The [AWS Secrets Manager](https://aws.amazon.com/secrets-manager/) service provides a secure way to manage secrets of any type, across your enterprise infrastructure.
+This integration will allow you to generate and store certificates, remove certificates and maintain an inventory of certificates stored in AWS Secrets Manager; providing a 
+comprehensive way to manage certificates used within your enterprise.
 
 
+### Requirements
 
-### Topics
-
-1. [Using this repository](#using-the-repository)
-1. [Update the integration-manifest.json](#updating-the-integration-manifest.json)
-1. [Add Keyfactor Bootstrap Workflow (keyfactor-bootstrap-workflow.yml)](#add-bootstrap)
-1. [Create required branches](#create-required-branches)
-1. [Replace template files/folders](#replace-template-files-and-folders)
-1. [Create initial prerelease](#create-initial-prerelease)
----
-
-#### Using the repository
-1. Select the ```Use this template``` button at the top of this page
-1. Update the repository name following [these guidelines](https://keyfactorinc.sharepoint.com/sites/IntegrationWiki/SitePages/GitHub-Processes.aspx#repository-naming-conventions) 
-    1. All repositories must be in lower-case
-	1. General pattern: company-product-type
-	1. e.g. hashicorp-vault-orchestator
-1. Click the ```Create repository``` button
+1. [Certificate Format](#using-the-repository)
+1. [Secret Naming ](#using-the-repository)
+1. [Authenticating and Permissions](#updating-the-integration-manifest.json)
 
 ---
 
-#### Updating the integration-manifest.json
+#### Certificate Format
 
-*The following properties must be updated in the [integration-manifest.json](./integration-manifest.json)*
+AWS Secrets Manager is essentially a key-value store that allows storing of arbitrary string or binary data in a secure way.  Considering that there is no inherent requirement regarding
+formatting of certificates within the platform; this poses a challenge when determining which secrets may be a valid certificate that should be managed by this extension.
 
-Clone the repository locally, use vsdev.io, or the GitHub online editor to update the file.
-
-* "name": "Friendly name for the integration"
-	* This will be used in the readme file generation and catalog entries
-* "description": "Brief description of the integration."
-	* This will be used in the readme file generation
-	* If the repository description is empty this value will be used for the repository description upon creating a release branch
-* "release_dir": "PATH\\\TO\\\BINARY\\\RELEASE\\\OUTPUT\\\FOLDER"
-	* Path separators can be "\\\\" or "/"
-	* Be sure to specify the release folder name. This can be found by running a Release build and noting the output folder
-	* Example: "AzureAppGatewayOrchestrator\\bin\\Release"
-* "about.orchestrator.platform_UOFramework": "10.1" 
-	* Universal Orchestrator Framework version required
-* "about.orchestrator.keyfactor_platform_support": "9.10"
-	* Command platform version required
-* "about.orchestrator.pam_support": false
-	* If the orchestrator supports PAM change this value to true 
-
-For each platform (win and linux) define which capabilities are present for this orchestrator extension. You must update the boolean properties for both win and linux platforms.
-
-* "supportsCreateStore"
-* "supportsDiscovery"
-* "supportsManagementAdd"
-* "supportsManagementRemove"
-* "supportsReenrollment"
-* "supportsInventory"
-
-### Cert Store Definitions
-
-The integration-manifest.json contains cert-store definitions for use with [kfutil](https://github.com/keyfactor/kfutil).
-
-Instructions for creating the store type entries can be found on the [kfutil Orchestrator Store Type Integration page on Confluence](https://keyfactor.atlassian.net/wiki/x/SoBVBQ)
+#### In order to address this while providing maximum compatibility, this integration will store newly issued certificates in AWS Secrets Manager as a **PEM** certificate, including the private key, in **Text** format.
 
 ---
 
-#### Add Bootstrap 
-Add Keyfactor Bootstrap Workflow (keyfactor-bootstrap-workflow.yml). This can be copied directly from the workflow templates or through the Actions tab
-* Directly:
-    1. Create a file named ```.github\workflows\keyfactor-bootstrap-workflow.yml``` 
-	1. Copy the contents of [keyfactor/.github/workflow-templates/keyfactor-bootstrap-workflow.yml](https://raw.githubusercontent.com/Keyfactor/.github/main/workflow-templates/keyfactor-bootstrap-workflow.yml) into the file created in the previous step
-* Actions tab:
-    1. Navigate to the [Actions tab](./actions) in the new repository
-	1. Click the ```New workflow``` button
-	1. Find the ```Keyfactor Bootstrap Workflow``` and click the ```Configure``` button
-	1. Click the ```Commit changes...``` button on this screen and the next to add the bootstrap workflow to the main branch
-	
-A new build will run the tasks of a *Push* trigger on the main branch
+#### Secret Naming
 
-*Ensure there are no errors during the workflow run in the Actions tab.*
+A common strategy used for organizing secrets with AWS Secrets Manager is to include a path structure in the secret name; for example 'dev/integrations/awssmtestcert' could imply the heirarchy of <org unit>/<team>/<cert>.
+The benefit of this approach is that it provides a way to organize and filter for specific sub-sets of secrets when querying the API.
 
----
+If you utilize a similar strategy for naming your certificates stored as a secret in AWS Secrets Manager, this integration allows you to specify the name prefix (or path) for all certificates that should be managed by an instance of a certificate store in Keyfactor Command.
 
-#### Create required branches 
-1. Create a release branch from main: release-1.0
-1. Create a dev branch from the starting with the devops id in the format ab#\<DevOps-ID>, e.g. ab#53535. 
-    1. For the cleanest pull request merge, create the dev branch from the release branch. 
-	1. Optionally, add a suffix to the branch name indicating initial release. e.g. ab#53535-initial-release
+We also provide the ability to use tags associated with the secret for the same purpose by providing a tag name and value that all certificate secrets managed by an instance of a certificate store will have.
+
+> :warning: When performing a certificate enrollment into a certificate store, it will incorporate the same convention that is defined in the certificate store.
+
+- **Example 1**:  if enrolling a certificate with alias "testcert", and adding it via Keyfactor Command to a certificate store with the "prefix" defined as "users/personal", then the full secret name will be: "users/personal/testcert"
+- **Example 2**:  enrolling the same certificate into a certificate store with no prefix defined, but a tagName of "managedBy" and value of "Keyfactor", the secret name would be simply "testcert", and we associate the tag {"managedBy": "Keyfactor"} with the newly created secret.
+
+In summary; supplying a name prefix or tag name and value as part of a certificate store definition in Keyfactor Command has the following implications:
+ - Inventory Jobs will only return certificates where the name begins with the prefix, and/or the tagName exists on the secret and contains the provided tagValue.
+ - Enrollment into these stores will apply the same convention to newly added certificate secrets; appending the prefix to the name and/or associating the tag name and value.
+
+
 
 ---
 
+#### Authenticating and Permissions
 
-#### Replace template files and folders
-1. Replace the contents of readme_source.md
-1. Create a CHANGELOG.md file in the root of the repository indicating ```1.0: Initial release```
-1. Replace the SampleOrchestratorExtension.sln solution file and SampleOrchestratorExtension folder with your new orchestrator dotnet solution
-1. Push your updates to the dev branch (ab#xxxxx)
+
+> [!NOTE]
+> In order to support the variety of alternative strategies available for authenticating into AWS, this integration utilizes the [Keyfactor AWS Auth Library](https://github.com/Keyfactor/aws-auth-library) 
+> Refer to the documentation [here](https://github.com/Keyfactor/aws-auth-library) for details and examples.
+
+##### AWS Secret Manager Permissions
+
+Here is a list of the IAM actions that the authenticating identity should have in order to perform all Jobs supported by this extension:
+
+
+- `secretsmanager.ListSecrets`
+- `secretsManager.GetSecretValue` 
+- `secretsmanager:CreateSecret`
+- `secretsmanager.DeleteSecret` 
+- `secretsmanager.UpdateSecret`
+- `secretsmanager.TagResource`  if using tags for filtering or to add tags via entry parameters.
+
+For more information on these permission actions, refer to the [AWS Documentation](https://docs.aws.amazon.com/service-authorization/latest/reference/list_awssecretsmanager.html).
 
 ---
-
-
-#### Create initial prerelease
-1. Create a pull request from the dev branch to the release-1.0 branch
-
-
-----
-
-When the repository is ready for SE Demo, change the following property:
-* "status": "pilot"
-
-When the integration has been approved by Support and Delivery teams, change the following property:
-* "status": "production"
-
-If the repository is ready to be published in the public catalog, the following properties must be updated:
-* "update_catalog": true
-* "link_github": true

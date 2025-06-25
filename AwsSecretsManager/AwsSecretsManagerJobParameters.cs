@@ -19,6 +19,14 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
         public long JobHistoryId { get; set; }
         public CertStoreProperties StoreProperties { get; set; }
         public CertProperties CertProperties { get; set; }
+        public string SecretName
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(StoreProperties.NamePrefix)) return CertProperties.Alias;
+                return $"{StoreProperties.NamePrefix}/{CertProperties.Alias}";
+            }
+        }
     }
 
     public class CertStoreProperties
