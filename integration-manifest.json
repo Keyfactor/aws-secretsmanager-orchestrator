@@ -7,7 +7,7 @@
       "pam_support": true,
       "store_types": [
         {
-          "Name": "AwsSecretsManager",
+          "Name": "AwsSecretsManager PEM",
           "ShortName": "AWSSM",
           "Capability": "AWSSM",
           "LocalStore": false,
@@ -15,7 +15,7 @@
             "Add": true,
             "Create": false,
             "Discovery": false,
-            "Enrollment": true,
+            "Enrollment": false,
             "Remove": true
           },
           "Properties": [
@@ -77,7 +77,7 @@
               "DefaultValue": "https://***/oauth2/default/v1/token",
               "Required": false,
               "IsPAMEligible": false,
-              "Description": "An optional parameter sts:ExternalId to pass with Assume Role calls"
+              "Description": "The token endpoint for the OAuth 2.0 provider"
             },
             {
               "Name": "OAuthClientId",
@@ -138,26 +138,6 @@
               "Required": false,
               "IsPAMEligible": false,
               "Description": "An optional parameter sts:ExternalId to pass with Assume Role calls"
-            },
-            {
-              "Name": "ServerUsername",
-              "DisplayName": "Server Username",
-              "Type": "Secret",
-              "DependsOn": "",
-              "DefaultValue": "",
-              "Required": false,
-              "IsPAMEligible": true,
-              "Description": "The AWS Access Key for an IAM User or Client ID for OAuth. Depends on Auth method in use."
-            },
-            {
-              "Name": "ServerPassword",
-              "DisplayName": "Server Password",
-              "Type": "Secret",
-              "DependsOn": "",
-              "DefaultValue": "",
-              "Required": false,
-              "IsPAMEligible": true,
-              "Description": "The AWS Access Secret for an IAM User or Client Secret for OAuth. Depends on Auth method in use."
             }
           ],
           "EntryParameters": [
@@ -195,13 +175,13 @@
           },
           "StorePathType": "",
           "StorePathValue": "",
-          "StorePathDescription": "The store path is an arbitrary identifier that will be set as a tag on the certificates in order to logically group them.  The tag will be in the following format: {'KeyfactorCertificateStore': '<store path>'}",
+          "StorePathDescription": "The store path contains the AWS region where the SecretsManager resides.  It can optionally accept values for tags OR path prefix for identifying secrets to be managed by the cert store instance.  example:'us-east-2 [prefix='dev/midwest']' or 'us-east1 [tagName='managedBy' tagValue='keyfactor']' ",
           "PrivateKeyAllowed": "Optional",
           "JobProperties": [],
-          "ServerRequired": true,
+          "ServerRequired": false,
           "PowerShell": false,
           "BlueprintAllowed": false,
-          "CustomAliasAllowed": "Optional"
+          "CustomAliasAllowed": "Required"
         }
       ]
     }

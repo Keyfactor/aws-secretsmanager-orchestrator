@@ -27,6 +27,11 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
                 return $"{StoreProperties.NamePrefix}/{CertProperties.Alias}";
             }
         }
+
+        public AwsSecretsManagerJobParameters() { 
+            StoreProperties = new CertStoreProperties();
+            CertProperties = new CertProperties();
+        }
     }
 
     public class CertStoreProperties
@@ -51,5 +56,10 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
         public string Alias { get; set; }  // the alias for the certificate
         public string Description { get; set; } // the description; can be passed via entry parameter
         public string PrivateKeyPassword { get; set; } // used to extract cert
+
+        public CertProperties() { 
+            ReplicaRegions = new List<ReplicaRegionType>();
+            Tags = new Dictionary<string, string>();
+        }
     }
 }

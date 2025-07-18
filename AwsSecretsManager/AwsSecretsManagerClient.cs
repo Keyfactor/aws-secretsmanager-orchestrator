@@ -52,8 +52,8 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
                 _logger.LogError("An error occurred while trying to get AWS Credentials");
                 throw;
             }
-
-            _secretsManagerClient = new AmazonSecretsManagerClient(providedCredentials.GetAwsCredentialObject());
+            _logger.LogTrace("creating an instance of the AmazonSecretsManagerClient");
+            _secretsManagerClient = new AmazonSecretsManagerClient(providedCredentials.GetAwsCredentialObject(), providedCredentials.Region);
 
             _logger.MethodExit();
         }
@@ -69,6 +69,8 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
             var results = new List<SecretValueEntry>();
 
             string nextToken = null;
+
+            // TODO: retreive list of filtered secret names first, then need to retrieve the values in another operation.
 
             _logger.LogTrace($"begin batch retreival of secrets..");
             try

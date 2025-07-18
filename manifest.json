@@ -1,17 +1,13 @@
 {
   "extensions": {
     "Keyfactor.Orchestrators.Extensions.IOrchestratorJobExtension": {
-      "CertStores.MOST.Inventory": {
-        "assemblypath": "Keyfactor.Extensions.Orchestrators.MOST.dll",
-        "TypeFullName": "Keyfactor.Extensions.Orchestrator.SampleOrchestratorExtension.Inventory"
+      "CertStores.AWSSM.Inventory": {
+        "assemblypath": "Keyfactor.Extensions.Orchestrators.AWSSM.dll",
+        "TypeFullName": "Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs.Inventory"
       },
-      "CertStores.MOST.Discovery": {
-        "assemblypath": "Keyfactor.Extensions.Orchestrators.MOST.dll",
-        "TypeFullName": "Keyfactor.Extensions.Orchestrator.SampleOrchestratorExtension.Discovery"
-      },
-      "CertStores.MOST.Management": {
-        "assemblypath": "Keyfactor.Extensions.Orchestrators.MOST.dll",
-        "TypeFullName": "Keyfactor.Extensions.Orchestrator.SampleOrchestratorExtension.Management"
+      "CertStores.AWSSM.Management": {
+        "assemblypath": "Keyfactor.Extensions.Orchestrators.AWSSM.dll",
+        "TypeFullName": "Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs.Management"
       }
     }
   }

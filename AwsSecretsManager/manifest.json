@@ -1,0 +1,30 @@
+{
+  "extensions": {
+    "Keyfactor.Orchestrators.Extensions.IOrchestratorJobExtension": {
+      "CertStores.AWSSMJKS.Inventory": {
+        "assemblypath": "Keyfactor.Extensions.Orchestrators.AWSSM.dll",
+        "TypeFullName": "Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs.Inventory"
+      },
+      "CertStores.AWSSMJKS.Management": {
+        "assemblypath": "Keyfactor.Extensions.Orchestrators.AWSSM.dll",
+        "TypeFullName": "Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs.Management"
+      },
+      "CertStores.AWSSMPFX.Inventory": {
+        "assemblypath": "Keyfactor.Extensions.Orchestrators.AWSSM.dll",
+        "TypeFullName": "Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs.Inventory"
+      },
+      "CertStores.AWSSMPFX.Management": {
+        "assemblypath": "Keyfactor.Extensions.Orchestrators.AWSSM.dll",
+        "TypeFullName": "Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs.Management"
+      },
+      "CertStores.AWSSMPEM.Inventory": {
+        "assemblypath": "Keyfactor.Extensions.Orchestrators.AWSSM.dll",
+        "TypeFullName": "Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs.Inventory"
+      },
+      "CertStores.AWSSMPEM.Management": {
+        "assemblypath": "Keyfactor.Extensions.Orchestrators.AWSSM.dll",
+        "TypeFullName": "Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs.Management"
+      }
+    }
+  }
+}

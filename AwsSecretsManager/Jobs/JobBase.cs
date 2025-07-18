@@ -18,7 +18,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
-using System.Text.RegularExpressions;
+using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 
 namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
@@ -26,10 +26,10 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
     public class JobBase<T> : IOrchestratorJobExtension
     {
         public string ExtensionName => Constants.STORE_TYPE_NAME;
-        internal protected ILogger _logger { get; set; }
-        internal protected IPAMSecretResolver _resolver { get; set; }
+        internal ILogger _logger { get; set; }
+        internal IPAMSecretResolver _resolver { get; set; }
         public virtual AwsSecretsManagerClient _secretsManagerClient { get; set; }
-        internal virtual AwsAuthUtility _authUtility { get; set; }
+        internal AwsAuthUtility _authUtility { get; set; }
         internal protected virtual AwsSecretsManagerJobParameters JobParameters { get; set; }
 
         public JobBase(IPAMSecretResolver resolver)
@@ -37,6 +37,7 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
             _logger = LogHandler.GetClassLogger(GetType());
             _resolver = resolver;
             _authUtility = new AwsAuthUtility(resolver);
+            _secretsManagerClient = new AwsSecretsManagerClient();
         }
 
         // set the configuration parameters
@@ -52,8 +53,9 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
             JobParameters.JobHistoryId = config.JobHistoryId;
 
             SetStoreProperties(config.CertificateStoreDetails);
+            _logger.LogTrace("successfully set the store properties");
 
-            InitializeAwsClient(config.CertificateStoreDetails, JobParameters.StoreProperties.AwsRegion);
+            InitializeAwsClient(config.CertificateStoreDetails);
 
             _logger.LogTrace("Inventory job initialization complete");
 
@@ -75,7 +77,7 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
 
             SetCertProperties(config.JobProperties, config.JobCertificate, config.Overwrite);
 
-            InitializeAwsClient(config.CertificateStoreDetails, JobParameters.StoreProperties.AwsRegion);
+            InitializeAwsClient(config.CertificateStoreDetails);
 
             _logger.LogTrace($"parameter initialization for Management > {config.OperationType.ToString()} job complete");
 
@@ -86,17 +88,18 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
         {
             _logger.MethodEntry();
 
-            var roleName = storeProps.ClientMachine; // Fully qualified ARN of the role to assume; might be prefixed with [profile] to use the default profile loaded on the host            
+            var roleName = storeProps.ClientMachine; // Fully qualified ARN of the role to assume; might be prefixed with [profile]; handled by auth library
             _logger.LogTrace("parsing tags, prefix, and region from the store path..");
-            (var storePath, var prefix, var tagName, var tagValue) = ParseStorePath(storeProps.StorePath);
+            (var awsRegion, var prefix, var tagName, var tagValue) = ParseStorePath(storeProps.StorePath);
 
             _logger.LogTrace(
                 @$"parsed the following from storepath: 
                 prefix: {prefix ?? "(not provided)"}
                 tagName: {tagName ?? "(not provided)"}
                 tagValue: {tagValue ?? "(not provided)"}
-                storePath: {storePath}");
+                awsRegion: {awsRegion}");
 
+            JobParameters.StoreProperties.AwsRegion = awsRegion;
 
             _logger.LogTrace("determining identification strategy for this cert store (tags, prefix, or full region)..");
 
@@ -115,7 +118,7 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
             {
                 _logger.LogTrace($"tag is undefined, checking for path value..");
 
-                if (!string.IsNullOrEmpty(prefix) && prefix.Trim() != "/" && prefix.Trim() != "\\") ;
+                if (!string.IsNullOrEmpty(prefix) && prefix?.Trim() != "/" && prefix?.Trim() != "\\")
                 {
                     _logger.LogTrace($"using path prefix '{prefix}' in secret name");
                     JobParameters.StoreProperties.NamePrefix = prefix;
@@ -123,20 +126,30 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
             }
         }
 
-        private void InitializeAwsClient(CertificateStore storeProps, string region)
+        private void InitializeAwsClient(CertificateStore storeProps)
         {
             _logger.MethodEntry();
-            AuthCustomFieldParameters customFields = JsonConvert.DeserializeObject<AuthCustomFieldParameters>(storeProps.Properties,
-                    new JsonSerializerSettings { DefaultValueHandling = DefaultValueHandling.Populate });
+            _logger.LogTrace("deserializing store properties..");
+            _logger.LogTrace($"raw value: {storeProps.Properties}");
+            AuthCustomFieldParameters customFields;
+            try
+            {
+                customFields = JsonConvert.DeserializeObject<AuthCustomFieldParameters>(storeProps.Properties,
+                        new JsonSerializerSettings { DefaultValueHandling = DefaultValueHandling.IgnoreAndPopulate });
+            }
+            catch (Exception ex) {
+                _logger.LogError($"An error occurred when attempting to deserialize the store properties:  {ex.Message}");
+                throw;            
+            }
+            _logger.LogTrace("successfully deserialized the store properties");
 
             AuthenticationParameters authParams = new AuthenticationParameters
             {
                 RoleARN = storeProps.ClientMachine,
-                Region = region,
+                Region = JobParameters.StoreProperties.AwsRegion,
                 CustomFields = customFields
             };
-
-            _logger.LogTrace("initializing AWS client..");
+                       
             _secretsManagerClient.InitializeClient(authParams, _authUtility);
 
             _logger.MethodExit();
@@ -233,62 +246,120 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
             return returnMessage;
         }
 
-        private (string, string, string, string) ParseStorePath(string storePath)
-        {
+        //private (string, string, string, string) ParseStorePath(string awsRegion)
+        //{
+        //    _logger.LogTrace($"parsing values from storepath \"{awsRegion}\"");
+        //    var bracketStart = awsRegion.IndexOf('[');
+        //    var bracketEnd = awsRegion.IndexOf(']');
+        //    (var prefix, var tagName, var tagValue) = (string.Empty, string.Empty, string.Empty);
 
-            var bracketStart = storePath.IndexOf('[');
-            var bracketEnd = storePath.IndexOf(']');
+        //    if (bracketStart == -1)
+        //    {
+        //        return (awsRegion, prefix, tagName, tagValue); // if no brackets, no need to perform the search and parse
+        //    }
 
-            var bracketedText = storePath.Substring(bracketStart, bracketEnd - bracketStart);
+        //    // Regex pattern to capture the prefix or tag name/value pairs
+        //    // It looks for bracketContent within square brackets [] and then tries to capture
+        //    // either "prefix" or "tagName" and "tagValue"
+        //    string pattern = @"\[(?:prefix=""(?<prefix>[^""]*)""|tagName=""(?<tagName>[^""]*)""\s+tagValue=""(?<tagValue>[^""]*)"")\]";
 
-            (var prefix, var tagName, var tagValue) = (string.Empty, string.Empty, string.Empty);
+        //    // Create a Regex object with the IgnoreCase option
+        //    Regex regex = new Regex(pattern, RegexOptions.IgnoreCase);
 
-            if (bracketStart == -1)
-            {
-                return (storePath, prefix, tagName, tagValue);
+        //    Match match = regex.Match(awsRegion);
+
+        //    if (match.Success)
+        //    {
+        //        // Check if the "prefix" group was captured
+        //        if (match.Groups["prefix"].Success)
+        //        {
+        //            prefix = match.Groups["prefix"].Value.Trim();
+
+        //            // remove any leading and trailing slashes
+        //            if (prefix.StartsWith("/") || prefix.StartsWith("\\"))
+        //            {
+        //                prefix = prefix.Substring(1);
+        //            }
+        //            if (prefix.EndsWith("/") || prefix.EndsWith("\\")) { prefix = prefix.Substring(0, prefix.Length - 1); }
+        //        }
+        //        // Check if the "tagName" and "tagValue" groups were captured
+        //        else if (match.Groups["tagName"].Success && match.Groups["tagValue"].Success)
+        //        {
+        //            tagName = match.Groups["tagName"].Value;
+        //            tagValue = match.Groups["tagValue"].Value;
+        //        }
+        //        awsRegion.Remove(bracketStart, bracketEnd);
+        //    }
+        //    else
+        //    {
+        //        // there were brackets, but none of the identifiers (tagName, tagValue or prefix)
+        //        // log a warning, return full value
+        //        _logger.LogWarning($"store path ({awsRegion}) includes brackets but no 'tagName', 'tagValue' or 'prefix' qualifier.  Make sure the store path format is valid.");
+
+        //    }
+
+        //    if (string.IsNullOrEmpty(tagName) && !string.IsNullOrEmpty(tagValue)) {
+        //        var errorMsg = $"if tagValue is provided, tagName must also be provided.";
+        //        _logger.LogError(errorMsg);
+        //        throw new Exception(errorMsg);
+        //    }
+
+        //    return (awsRegion, prefix, tagName, tagValue);
+
+        //}
+
+        /// <summary>
+        /// parses the optional prefix, tagName and tagValue parameters from the store path
+        /// examples: 
+        ///     us-east-2 [prefix="dev/testing/"]
+        ///     us-east-1 [prefix="web/certs/" tagName="managedBy" tagValue="Keyfactor"]
+        ///     us-west-1
+        /// </summary>
+        /// <param name="storePath"></param>
+        /// <returns>(storepath, prefix, tagName, tagValue)</returns>
+        private (string, string, string, string) ParseStorePath(string storePath) {
+
+            string prefix = null;
+            string tagName = null;
+            string tagValue = null;
+            string cleanPath = storePath;
+
+            var startBracketIndex = storePath.IndexOf('[');
+            var endBracketIndex = storePath.IndexOf(']');
+            var bracketLength = endBracketIndex - startBracketIndex;
+
+            if (bracketLength <= 0) { 
+                return (cleanPath, prefix, tagName, tagValue);
             }
 
-            // Regex pattern to capture the prefix or tag name/value pairs
-            // It looks for content within square brackets [] and then tries to capture
-            // either "prefix" or "tagName" and "tagValue"
-            string pattern = @"\[(?:prefix=""(?<prefix>[^""]*)""|tagName=""(?<tagName>[^""]*)""\s+tagValue=""(?<tagValue>[^""]*)"")\]";
+            var bracketContent = storePath.Substring(startBracketIndex, endBracketIndex - 2);
+            var attributes = new Dictionary<string, string>();
 
-            // Create a Regex object with the IgnoreCase option
-            Regex regex = new Regex(pattern, RegexOptions.IgnoreCase);
-
-            Match match = regex.Match(storePath);
-
-            if (match.Success)
+            // Split by quotes and extract key-value pairs
+            var parts = bracketContent.Split('"');
+            for (int i = 0; i < parts.Length - 1; i += 2)
             {
-                // Check if the "prefix" group was captured
-                if (match.Groups["prefix"].Success)
+                var keyPart = parts[i].Trim();
+                if (keyPart.EndsWith("="))
                 {
-                    prefix = match.Groups["prefix"].Value.Trim();
-
-                    // remove any leading and trailing slashes
-                    if (prefix.StartsWith("/") || prefix.StartsWith("\\"))
-                    {
-                        prefix = prefix.Substring(1);
-                    }
-                    if (prefix.EndsWith("/") || prefix.EndsWith("\\")) { prefix = prefix.Substring(0, prefix.Length - 1); }
+                    var key = keyPart.Substring(0, keyPart.Length - 1);
+                    var value = parts[i + 1];
+                    attributes[key] = value;
                 }
-                // Check if the "tagName" and "tagValue" groups were captured
-                else if (match.Groups["tagName"].Success && match.Groups["tagValue"].Success)
-                {
-                    tagName = match.Groups["tagName"].Value;
-                    tagValue = match.Groups["tagValue"].Value;
-                }
-                storePath.Remove(bracketStart, bracketEnd);
             }
-            else
-            {
-                // there were brackets, but none of the identifiers (tagName, tagValue or prefix)
-                // log a warning, return full value
-                _logger.LogWarning($"store path ({storePath}) includes brackets but no 'tagName', 'tagValue' or 'prefix' qualifier.  Make sure the store path format is valid.");
 
-            }
+            // Validate combinations
+            if (attributes.ContainsKey("prefix"))
+                prefix = attributes["prefix"];
+
+            if (attributes.ContainsKey("tagName"))
+                tagName = attributes["tagName"];
+
+            if (attributes.ContainsKey("tagValue"))
+                tagValue = attributes["tagValue"];
+
             return (storePath, prefix, tagName, tagValue);
-
         }
+
     }
 }
