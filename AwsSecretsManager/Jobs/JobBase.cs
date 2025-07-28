@@ -137,9 +137,10 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
                 customFields = JsonConvert.DeserializeObject<AuthCustomFieldParameters>(storeProps.Properties,
                         new JsonSerializerSettings { DefaultValueHandling = DefaultValueHandling.IgnoreAndPopulate });
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 _logger.LogError($"An error occurred when attempting to deserialize the store properties:  {ex.Message}");
-                throw;            
+                throw;
             }
             _logger.LogTrace("successfully deserialized the store properties");
 
@@ -149,7 +150,7 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
                 Region = JobParameters.StoreProperties.AwsRegion,
                 CustomFields = customFields
             };
-                       
+
             _secretsManagerClient.InitializeClient(authParams, _authUtility);
 
             _logger.MethodExit();
@@ -163,45 +164,50 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
 
             _logger.LogTrace("getting certificate tag values, if any..");
 
-            var tagsJSON = jobProperties["Tags"]?.ToString();
-            var jObj = JObject.Parse(tagsJSON);
-            var tagDict = new Dictionary<string, string>();
-
-            foreach (var tag in jObj)
+            if (jobProperties.ContainsKey("Tags") && !string.IsNullOrEmpty(jobProperties["Tags"] as string))
             {
-                tagDict.Add(tag.Key, (string)tag.Value);
+                var tagsJSON = jobProperties["Tags"]?.ToString();
+                var jObj = JObject.Parse(tagsJSON);
+                var tagDict = new Dictionary<string, string>();
+
+
+                foreach (var tag in jObj)
+                {
+                    tagDict.Add(tag.Key, (string)tag.Value);
+                }
+
+                _logger.LogTrace($"found {tagDict.Count} Tag(s)");
+
+                JobParameters.CertProperties.Tags = tagDict;
             }
-
-            _logger.LogTrace($"found {tagDict.Count} Tag(s)");
-
-            JobParameters.CertProperties.Tags = tagDict;
 
             // get replica regions entry parameter;  format =  [{Region: "<region name>", KmsKeyId: "<key id>"}, ...]            
 
-            var replicaRegionsJSON = jobProperties["ReplicaRegions"]?.ToString();
-            _logger.LogTrace($"getting replica region values, if any, from the JSON string '{replicaRegionsJSON}'");
-
-            jObj = JObject.Parse(replicaRegionsJSON);
-            JobParameters.CertProperties.ReplicaRegions = new List<ReplicaRegionType>();
-
-            foreach (var replicaRegion in jObj)
+            if (jobProperties.ContainsKey("ReplicaRegions") && !string.IsNullOrEmpty(jobProperties["ReplicaRegions"] as string))
             {
-                JobParameters.CertProperties.ReplicaRegions.Add(new ReplicaRegionType() { Region = jObj["Region"]?.ToString().ToLower(), KmsKeyId = jObj["KmsKeyId"]?.ToString() });
+                var replicaRegionsJSON = jobProperties["ReplicaRegions"]?.ToString();
+                _logger.LogTrace($"getting replica region values, if any, from the JSON string '{replicaRegionsJSON}'");
+
+                var jObj = JObject.Parse(replicaRegionsJSON);
+                JobParameters.CertProperties.ReplicaRegions = new List<ReplicaRegionType>();
+
+                foreach (var replicaRegion in jObj)
+                {
+                    JobParameters.CertProperties.ReplicaRegions.Add(new ReplicaRegionType() { Region = jObj["Region"]?.ToString().ToLower(), KmsKeyId = jObj["KmsKeyId"]?.ToString() });
+                }
+
+                _logger.LogTrace($"found {JobParameters.CertProperties.ReplicaRegions.Count} Replica Regions(s)");
             }
-
-            _logger.LogTrace($"found {JobParameters.CertProperties.ReplicaRegions.Count} Replica Regions(s)");
-
             _logger.LogTrace($"loading certificate properties..");
 
             // get KmsKeyId (to use an encryption key other than the default)
-            JobParameters.CertProperties.KmsKeyId = jobProperties["KmsKeyId"]?.ToString();
-
+            JobParameters.CertProperties.KmsKeyId = jobProperties.ContainsKey("KmsKeyId") ? jobProperties["KmsKeyId"]?.ToString() : null;
             JobParameters.CertProperties.Overwrite = overwrite;
             JobParameters.CertProperties.Alias = certProperties.Alias;
             JobParameters.CertProperties.PrivateKeyPassword = certProperties.PrivateKeyPassword;
             JobParameters.CertProperties.Thumbprint = certProperties.Thumbprint;
             JobParameters.CertProperties.Contents = certProperties.Contents;
-            JobParameters.CertProperties.Description = jobProperties["Description"]?.ToString();
+            JobParameters.CertProperties.Description = jobProperties.ContainsKey("Description") ? jobProperties["Description"].ToString() : null;
 
             _logger.MethodExit();
         }
@@ -317,7 +323,8 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
         /// </summary>
         /// <param name="storePath"></param>
         /// <returns>(storepath, prefix, tagName, tagValue)</returns>
-        private (string, string, string, string) ParseStorePath(string storePath) {
+        private (string, string, string, string) ParseStorePath(string storePath)
+        {
 
             string prefix = null;
             string tagName = null;
@@ -328,7 +335,8 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
             var endBracketIndex = storePath.IndexOf(']');
             var bracketLength = endBracketIndex - startBracketIndex;
 
-            if (bracketLength <= 0) { 
+            if (bracketLength <= 0)
+            {
                 return (cleanPath, prefix, tagName, tagValue);
             }
 

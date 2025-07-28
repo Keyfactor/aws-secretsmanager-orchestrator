@@ -12,11 +12,9 @@ using Keyfactor.Extensions.Aws;
 using Keyfactor.Extensions.Aws.Models;
 using Keyfactor.Logging;
 using Microsoft.Extensions.Logging;
-using Org.BouncyCastle.Ocsp;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
@@ -67,20 +65,47 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
             _logger.MethodEntry();
 
             var results = new List<SecretValueEntry>();
+            var secretNames = new List<string>();
 
             string nextToken = null;
 
             // TODO: retreive list of filtered secret names first, then need to retrieve the values in another operation.
 
-            _logger.LogTrace($"begin batch retreival of secrets..");
+            // get the secret names
+
             try
             {
+                _logger.LogTrace("retreiving secret names...");
+
+                do
+                {
+                    var request = new ListSecretsRequest
+                    {
+                        Filters = filters,
+                        MaxResults = 100
+                    };
+                    var secretNamesResponse = await _secretsManagerClient.ListSecretsAsync(request);
+                    nextToken = secretNamesResponse.NextToken;
+                    secretNames.AddRange(secretNamesResponse.SecretList?.Select(s => s.Name));
+                }
+                while (nextToken != null);
+            }
+            catch (Exception ex) {
+                _logger.LogError($"an error occurred when attempting to retreive the list of secret names.");
+                _logger.LogError($"{LogHandler.FlattenException(ex)}");
+                throw;            
+            }
+
+            _logger.LogTrace($"got {secretNames.Count} secrets using the applied filters.");
+            
+            try
+            {
+                _logger.LogTrace($"begin batch retreival of secret values..");
                 do
                 {
                     var request = new BatchGetSecretValueRequest
                     {
-                        Filters = filters,
-                        MaxResults = 20,
+                        SecretIdList = secretNames
                     };
                     if (nextToken != null)
                     {
@@ -95,7 +120,7 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
                     _logger.LogTrace("retreiving next batch of up to 20 entries..");
                 }
                 while (!string.IsNullOrEmpty(nextToken));
-
+                _logger.LogTrace("completed secret value retreival");
                 return results;
             }
             catch (Exception ex)
@@ -137,9 +162,9 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
 
             _logger.LogTrace($"checking for existing secret named '{secretName}'");
 
-            var existing = GetSecret(secretName);
+            var exists = await SecretExists(secretName);
 
-            if (existing != null)
+            if (exists)
             {
                 // there is an existing secret with the same name..
 
@@ -167,14 +192,20 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
             }
         }
 
-        public async Task<GetSecretValueResponse> GetSecret(string secretName)
-        {
+        public async Task<bool> SecretExists(string secretName) {
             _logger.MethodEntry();
 
-            var req = new GetSecretValueRequest();
-            GetSecretValueResponse resp;
-            req.SecretId = secretName;
+            var req = new ListSecretsRequest();
+            req.Filters = new List<Filter>();
 
+            ListSecretsResponse resp;
+            var nameFilter = new Filter()
+            {
+                Key = AWSFilterParameter.NAME, // searches prefix (not full match) by default
+                Values = new List<string>() { secretName }
+            };
+
+            req.Filters.Add(nameFilter);
 
             _logger.LogTrace($"attempting to retreive secret named {secretName}");
 
@@ -182,12 +213,13 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
             try
             {
                 _logger.LogTrace($"sending request to AWS..");
-                resp = await _secretsManagerClient.GetSecretValueAsync(req);
+                resp = await _secretsManagerClient.ListSecretsAsync(req);
                 _logger.LogTrace($"request was successful");
-                if (resp.HttpStatusCode == System.Net.HttpStatusCode.NotFound)
+                _logger.LogTrace($"returned {resp.SecretList.Count} secret(s) named {secretName}");
+                if (resp.HttpStatusCode == System.Net.HttpStatusCode.NotFound || resp.SecretList == null || resp.SecretList.Count < 1)
                 {
                     _logger.LogTrace($"the secret named {secretName} was not found.");
-                    return null;
+                    return false;
                 }
             }
             catch (Exception ex)
@@ -201,7 +233,7 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
             }
 
             // return the ARN
-            return resp;
+            return true;
         }
 
         private async Task<string> AddSecret(string secretName, CertProperties certProps)

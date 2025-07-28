@@ -72,19 +72,6 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
 
             try
             {
-                // TODO: check for existing, then check overwrite flag
-                var existing = _secretsManagerClient.GetSecret(JobParameters.SecretName);
-
-                if (existing != null) {
-                    if (!JobParameters.CertProperties.Overwrite) { // a secret with the name exists and overwrite is fales
-                        return FailureJobResult($"a secret already exists with the name '{JobParameters.SecretName}' and overwrite = false.  Certificate was not added.");
-                    }
-                    else {
-                        
-                    
-                    }
-                }
-
                 var certARN = _secretsManagerClient.AddOrUpdateSecret(JobParameters.SecretName, JobParameters.CertProperties).Result;
                 return SuccessJobResult($"Successfully enrolled certificate with alias '{JobParameters.CertProperties.Alias}'.\nARN: {certARN}");
             }
