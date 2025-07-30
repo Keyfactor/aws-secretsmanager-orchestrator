@@ -25,7 +25,7 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
 {
     public class JobBase<T> : IOrchestratorJobExtension
     {
-        public string ExtensionName => Constants.STORE_TYPE_NAME;
+        public string ExtensionName => "AWSSM";
         internal ILogger _logger { get; set; }
         internal IPAMSecretResolver _resolver { get; set; }
         public virtual AwsSecretsManagerClient _secretsManagerClient { get; set; }
@@ -44,10 +44,9 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
         public virtual void Initialize(InventoryJobConfiguration config)
         {
             _logger.MethodEntry();
-
-            _logger.LogTrace($"reading serialized configuration passed from Command to create the AwsSecretsManagerJobParameters object..");
-
+            _logger.LogTrace($"reading serialized configuration passed from Command to create the AwsSecretsManagerJobParameters object..");            
             JobParameters = new AwsSecretsManagerJobParameters();
+            JobParameters.StoreType = config.Capability.Split('.')[1] ?? null;
             JobParameters.JobType = "Inventory";
             JobParameters.JobId = config.JobId;
             JobParameters.JobHistoryId = config.JobHistoryId;
@@ -58,6 +57,7 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
             InitializeAwsClient(config.CertificateStoreDetails);
 
             _logger.LogTrace("Inventory job initialization complete");
+            _logger.LogTrace($"storetype is {JobParameters.StoreType}");
 
             _logger.MethodExit();
         }

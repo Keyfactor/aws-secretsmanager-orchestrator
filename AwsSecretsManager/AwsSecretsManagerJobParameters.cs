@@ -15,6 +15,7 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
     public class AwsSecretsManagerJobParameters
     {
         public string JobType { get; set; }
+        public string StoreType { get; set; }
         public Guid JobId { get; set; }
         public long JobHistoryId { get; set; }
         public CertStoreProperties StoreProperties { get; set; }

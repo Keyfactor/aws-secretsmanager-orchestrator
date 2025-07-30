@@ -69,8 +69,6 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
 
             string nextToken = null;
 
-            // TODO: retreive list of filtered secret names first, then need to retrieve the values in another operation.
-
             // get the secret names
 
             try
@@ -96,30 +94,26 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
                 throw;            
             }
 
-            _logger.LogTrace($"got {secretNames.Count} secrets using the applied filters.");
+            _logger.LogTrace($"got {secretNames.Count} secret names using the applied filters.");
             
             try
             {
-                _logger.LogTrace($"begin batch retreival of secret values..");
+                _logger.LogTrace($"begin batch retreival of (up to 20) secret values..");
                 do
                 {
                     var request = new BatchGetSecretValueRequest
                     {
                         SecretIdList = secretNames
                     };
-                    if (nextToken != null)
-                    {
-                        request.NextToken = nextToken;
-                    }
+                    
 
                     var response = await _secretsManagerClient.BatchGetSecretValueAsync(request);
-
                     results.AddRange(response.SecretValues);
                     nextToken = response.NextToken;
-                    _logger.LogTrace($"got {response.SecretValues.Count} entries.");
+                    _logger.LogTrace($"got {response.SecretValues.Count} secret value entries.");
                     _logger.LogTrace("retreiving next batch of up to 20 entries..");
                 }
-                while (!string.IsNullOrEmpty(nextToken));
+                while (nextToken != null);
                 _logger.LogTrace("completed secret value retreival");
                 return results;
             }

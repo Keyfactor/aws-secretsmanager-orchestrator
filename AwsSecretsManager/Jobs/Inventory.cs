@@ -8,12 +8,15 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using Amazon.SecretsManager.Model;
 using Keyfactor.Logging;
 using Keyfactor.Orchestrators.Extensions;
 using Keyfactor.Orchestrators.Extensions.Interfaces;
 using Microsoft.Extensions.Logging;
+using Org.BouncyCastle.OpenSsl;
+using Org.BouncyCastle.X509;
 
 namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
 {
@@ -36,6 +39,7 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
             _logger.LogDebug($"begin Inventory...");
 
             List<CurrentInventoryItem> inventoryItems = new List<CurrentInventoryItem>();
+            List<string> warnings = new List<string>();
 
             try
             {
@@ -95,50 +99,27 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
                 var secrets = _secretsManagerClient.ListSecrets(filters).Result;
 
                 // check for validity and parse-ability
+                // then convert to base64 encoded cer
+                // this process differs for each store type
 
-                var warningCount = 0;
 
-                foreach (var potentialCert in secrets)
-                {
-                    _logger.LogTrace($"parsing secret named: {potentialCert.Name}");
+                switch (JobParameters.StoreType) {
+                    case "AWSSMPEM":
+                        (inventoryItems,warnings) = ConvertSecretsPem(secrets);
+                        break;
+                    case "AWSSMPFX":
+                        (inventoryItems, warnings) = ConvertSecretsPfx(secrets);
+                        break;
+                    case "AWSSMJKS":
+                        (inventoryItems, warnings) = ConvertSecretsJks(secrets);
+                        break;
+                    default:
+                        throw new ArgumentException($"Invalid store type {JobParameters.StoreType}");
 
-                    var includeChain = false;
-                    try
-                    {
-                        // try pemtoder
-                        var certBytes = PKI.PEM.PemUtilities.PEMToDER(potentialCert.SecretString);
+                }
 
-                        // check for chain level (multiple certs)
-
-                        var certCount = potentialCert.SecretString.Split("-----BEGIN CERTIFICATE-----").Length - 1;
-
-                        includeChain = certCount > 1;
-
-                        _logger.LogTrace($"found {certCount} headers.  {(includeChain ? " multiple headers; chain implied" : " single certificate, no chain.")}");
-
-                        _logger.LogTrace("successfully parsed PEM string");
-                    }
-                    catch (Exception ex)
-                    {
-                        // it failed; log a warning and continue.
-
-                        _logger.LogWarning($"Unable to perform PEM to DER conversion on secret named {potentialCert.Name}.");
-                        _logger.LogWarning("cert contents:");
-                        _logger.LogWarning($"\n{potentialCert.SecretString}\n");
-                        _logger.LogWarning($"Exception: {ex.Message}");
-                        warningCount++;
-                        continue;
-                    }
-
-                    inventoryItems.Add(new CurrentInventoryItem()
-                    {
-                        Alias = potentialCert.Name, // trim prefix?
-                        Certificates = new string[] { potentialCert.SecretString },
-                        PrivateKeyEntry = false,
-                        UseChainLevel = includeChain
-                    });
-
-                } // end cert evaluation loop
+                var warningCount = warnings.Count;
+                
 
                 var succeeded = true;
                 var resultMessage = $"Successfully processed {inventoryItems.Count} certificates. ";
@@ -159,6 +140,8 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
                     succeeded = false;
                 }
 
+                _logger.LogTrace($"invoking callback with list of {inventoryItems.Count} certificates..");
+
                 if (succeeded && submitInventory.Invoke(inventoryItems)) return result;
 
                 return FailureJobResult("Inventory Job callback failed.  Review the orchestrator logs for more details.");
@@ -167,6 +150,128 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
             {
                 return FailureJobResult($"Error performing Inventory job: {ex.Message}\nReview the orchestrator logs for more details.");
             }
+        }
+
+        private (List<CurrentInventoryItem>, List<string>) ConvertSecretsJks(List<SecretValueEntry> secrets)
+        {
+            throw new NotImplementedException();
+        }
+
+        private (List<CurrentInventoryItem>, List<string>) ConvertSecretsPfx(List<SecretValueEntry> secrets)
+        {
+            throw new NotImplementedException();
+        }
+
+        private (List<CurrentInventoryItem>, List<string>) ConvertSecretsPem(List<SecretValueEntry> secrets)
+        {
+            _logger.MethodEntry();
+            var warnings = new List<string>();
+            var inventoryItems = new List<CurrentInventoryItem>();
+
+            foreach (var potentialCert in secrets)
+            {
+                _logger.LogTrace($"parsing secret named: {potentialCert.Name}");
+
+                List<string> encodedCerts = new List<string>();
+
+                try
+                {
+                    // for AWSSMPEM, they will be stored as a secret string in PEM format.
+                    var secretString = potentialCert.SecretString; 
+
+                    //_logger.LogTrace($"secret string: {secretString}");
+
+                    // try pemtoder
+                    var certBytes = PKI.PEM.PemUtilities.PEMToDER(potentialCert.SecretString);
+                    _logger.LogTrace("successfully tested conversion from PEM to DER");
+
+                    // if it didn't throw.. convert to base64 cer format
+
+                    encodedCerts = ConvertPemToFullChainBase64(potentialCert.SecretString);                    
+                    
+                    _logger.LogTrace($"converted to Base64 cer format.  The chain is {(encodedCerts.Count > 1 ? "" : "not ")}included.");
+
+                    _logger.LogTrace("successfully parsed certificate from AWS Secrets Manager");
+                }
+                catch (Exception ex)
+                {
+                    // it failed; log a warning and continue.
+                    var msg = 
+$@"Unable to perform PEM to DER conversion on secret named {potentialCert.Name}.
+cert contents:
+{{potentialCert.SecretString}}
+""Exception: {{ex.Message}}";
+
+                    _logger.LogWarning("cert contents:");
+                    _logger.LogWarning($"\n{potentialCert.SecretString}\n");
+                    _logger.LogWarning($"Exception: {ex.Message}");
+                    warnings.Add(msg);
+                    continue;
+                }
+
+                inventoryItems.Add(new CurrentInventoryItem()
+                {
+                    Alias = potentialCert.Name,
+                    Certificates = encodedCerts.ToArray(),
+                    PrivateKeyEntry = false,
+                    UseChainLevel = encodedCerts.Count > 1,
+                });
+
+            } // end cert evaluation loop
+            return (inventoryItems, warnings);
+        }
+
+        public static List<string> ConvertPemToFullChainBase64(string pemCertificateWithKey)
+        {
+            var certificates = ExtractCertificatesFromPem(pemCertificateWithKey);
+            var encodedCerts = new List<string>();
+
+            if (!certificates.Any())
+            {
+                throw new InvalidOperationException("No certificates found in PEM data");
+            }
+            var includesChain = certificates.Count > 1;            
+
+            // Combine all certificates into a single byte array
+            var allCertBytes = new List<byte>();
+            foreach (var cert in certificates)
+            {
+                var encodedCert = Convert.ToBase64String(cert.GetEncoded());
+                encodedCerts.Add(encodedCert);
+                //allCertBytes.AddRange(cert.GetEncoded());
+            }
+
+            return encodedCerts;
+        }
+
+        // Extract all certificates from PEM, preserving order
+        private static List<X509Certificate> ExtractCertificatesFromPem(string pemData)
+        {
+            var certificates = new List<X509Certificate>();
+
+            try
+            {
+                using (var stringReader = new StringReader(pemData))
+                {
+                    var pemReader = new PemReader(stringReader);
+
+                    object pemObject;
+                    while ((pemObject = pemReader.ReadObject()) != null)
+                    {
+                        if (pemObject is X509Certificate cert)
+                        {
+                            certificates.Add(cert);
+                        }
+                        // Skip private keys and other non-certificate objects
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error extracting certificates from PEM: {ex.Message}", ex);
+            }
+
+            return certificates;
         }
     }
 }

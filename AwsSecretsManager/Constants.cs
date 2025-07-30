@@ -15,7 +15,9 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
 {
     static class Constants
     {
-        public const string STORE_TYPE_NAME = "AWSSM";
+        public const string STORE_TYPE_PEM = "AWSSMPEM";
+        public const string STORE_TYPE_PFX = "AWSSMPFX";
+        public const string STORE_TYPE_JKS = "AWSSMJKS";
     }
     public static class KeyfactorJobType
     {
