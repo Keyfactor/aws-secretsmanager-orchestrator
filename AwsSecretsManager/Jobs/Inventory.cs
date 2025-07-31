@@ -101,8 +101,6 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
                 // check for validity and parse-ability
                 // then convert to base64 encoded cer
                 // this process differs for each store type
-
-
                 switch (JobParameters.StoreType) {
                     case "AWSSMPEM":
                         (inventoryItems,warnings) = ConvertSecretsPem(secrets);
@@ -115,7 +113,6 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
                         break;
                     default:
                         throw new ArgumentException($"Invalid store type {JobParameters.StoreType}");
-
                 }
 
                 var warningCount = warnings.Count;

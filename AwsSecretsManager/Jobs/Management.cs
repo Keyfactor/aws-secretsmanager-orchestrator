@@ -41,7 +41,7 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
                     case CertStoreOperationType.Add:
                         return AddCertificate();
                     case CertStoreOperationType.Remove:
-                        return RemoveCertificate();
+                        return RemoveCertificate().Result;
                     default:
                         // this should never occur
                         return FailureJobResult($"Unsupported operation: {config.OperationType.ToString()}");
@@ -65,14 +65,15 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
         /// if overwrite is false, skip.
         /// if no existing secret with the name exists, create a new one for the certificate.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>JobResult with status</returns>
         public JobResult AddCertificate()
         {
             _logger.MethodEntry();
+            var arn = string.Empty;
 
             try
             {
-                var certARN = _secretsManagerClient.AddOrUpdateSecret(JobParameters.SecretName, JobParameters.CertProperties).Result;
+                var certARN = _secretsManagerClient.AddOrUpdateSecret(JobParameters).Result;
                 return SuccessJobResult($"Successfully enrolled certificate with alias '{JobParameters.CertProperties.Alias}'.\nARN: {certARN}");
             }
             catch (Exception ex)
@@ -87,14 +88,14 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
             }
         }
 
-        public JobResult RemoveCertificate()
+        public async Task<JobResult> RemoveCertificate()
         {
             _logger.MethodEntry();
 
             try 
             {
                 _logger.LogTrace($"sending request to remove secret named {JobParameters.SecretName}");
-                _secretsManagerClient.RemoveSecret(JobParameters.SecretName).RunSynchronously();
+                await _secretsManagerClient.RemoveSecret(JobParameters.SecretName);
                 return SuccessJobResult();
             }
             catch (Exception ex) 
@@ -107,46 +108,3 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
         }
     }
 }
-
-// {
-//                "LastInventory": [],
-//                "CertificateStoreDetails": {
-//                    "ClientMachine": "localmachine",
-//                    "StorePath": "c:\\tempSOS\\mystore.json",
-//                    "StorePassword": null,
-//                    "Properties": {
-//                        "StoreNameString": "my sample store",
-//                        "ForTestingOnlyBool": "true",
-//                        "CollectionNameMultipleChoice": "internal",
-//                        "PrivateDetailsSecret": "my secret",
-//                        "ServerUsername": "joe",
-//                        "ServerPassword": "v",
-//                        "ServerUseSsl": "true"
-//                    },
-//                "Type": 105
-//                },
-//                "OperationType": 2,
-//                "Overwrite": false,
-//                "JobCertificate": {
-//                    "Thumbprint": null,
-//                    "Contents": "",
-//                    "Alias": "testcert",
-//                    "PrivateKeyPassword": "..."
-//                },
-//                "JobCancelled": false,
-//                "ServerError": null,
-//                "JobHistoryId": 28,
-//                "RequestStatus": 1,
-//                "ServerUsername": "joe",
-//                "ServerPassword": "v",
-//                "UseSSL": true,
-//                "JobProperties": {
-//                    "CommaSeparatedSansString": "testwritecert.keyfactor.lab,testcert.keyfactor.lab",
-//                    "CertColorMultipleChoice": "red",
-//                    "ForTestingOnlyBool": true,
-//                    "PrivateCertDetailsSecret": "secretcert"
-//                },
-//                "JobTypeId": "00000000-0000-0000-0000-000000000000",
-//                "JobId": "4234344b-a254-45b5-b233-d70aedd187ea",
-//                "Capability": "CertStores.SOS.Management"
-//          }

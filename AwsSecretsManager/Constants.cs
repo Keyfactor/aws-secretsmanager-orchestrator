@@ -32,6 +32,11 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
         public const string TAG_VALUE = "tag-value";
     }
 
+    public static class EntryParameterKeys {
+        public const string TAGS = "CertificateTags";
+        public const string REPLICAREGIONS = "ReplicaRegions";
+    }
+
     public static class CertUtilities
     {
         public static string ConvertPfxToPem(string base64Pfx, string password)

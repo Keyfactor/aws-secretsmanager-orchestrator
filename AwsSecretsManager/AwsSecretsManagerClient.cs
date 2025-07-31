@@ -12,6 +12,7 @@ using Keyfactor.Extensions.Aws;
 using Keyfactor.Extensions.Aws.Models;
 using Keyfactor.Logging;
 using Microsoft.Extensions.Logging;
+using Org.BouncyCastle.Ocsp;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -88,14 +89,15 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
                 }
                 while (nextToken != null);
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 _logger.LogError($"an error occurred when attempting to retreive the list of secret names.");
                 _logger.LogError($"{LogHandler.FlattenException(ex)}");
-                throw;            
+                throw;
             }
 
             _logger.LogTrace($"got {secretNames.Count} secret names using the applied filters.");
-            
+
             try
             {
                 _logger.LogTrace($"begin batch retreival of (up to 20) secret values..");
@@ -105,7 +107,7 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
                     {
                         SecretIdList = secretNames
                     };
-                    
+
 
                     var response = await _secretsManagerClient.BatchGetSecretValueAsync(request);
                     results.AddRange(response.SecretValues);
@@ -142,10 +144,10 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
         /// <param name="secretName"></param>
         /// <param name="certProps"></param>
         /// <returns></returns>
-        public async Task<string> AddOrUpdateSecret(string secretName, CertProperties certProps)
+        public async Task<string> AddOrUpdateSecret(AwsSecretsManagerJobParameters jobParameters)
         {
             _logger.MethodEntry();
-            _logger.LogTrace($"the certificate alias is '{certProps.Alias}'.  The resolved the secret name in AWS will be '{secretName}'");
+            _logger.LogTrace($"the certificate alias is '{jobParameters.CertProperties.Alias}'.  The resolved the secret name in AWS will be '{jobParameters.SecretName}'");
 
             CreateSecretResponse resp;
             AmazonSecretsManagerRequest req;
@@ -154,21 +156,21 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
 
             // first we need to check to see if a secret with the same name exists..
 
-            _logger.LogTrace($"checking for existing secret named '{secretName}'");
+            _logger.LogTrace($"checking for existing secret named '{jobParameters.SecretName}'");
 
-            var exists = await SecretExists(secretName);
+            var exists = await SecretExists(jobParameters.SecretName);
 
             if (exists)
             {
                 // there is an existing secret with the same name..
 
-                _logger.LogTrace($"a secret with the name '{secretName}' exists.");
+                _logger.LogTrace($"a secret with the name '{jobParameters.SecretName}' exists.");
 
-                if (!certProps.Overwrite)
+                if (!jobParameters.CertProperties.Overwrite)
                 {
                     // and we should not overwrite it
                     _logger.LogTrace($"... and the 'overwrite' flag is false, the certificate will not be stored.");
-                    return null;
+                    throw new ResourceExistsException($"a secret named {jobParameters.SecretName} already exists, and overwrite is false.  No action taken.");
                 }
                 else replace = true; // and we should overwrite it
             }
@@ -176,17 +178,18 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
             if (replace)
             {
                 _logger.LogTrace("the existing secret will be replaced");
-                return await UpdateSecret(secretName, certProps);
+                return await UpdateSecret(jobParameters);
             }
             else
             {
                 // there is not a secret with the same name, we will add a new one.
-                _logger.LogTrace($"no existing secret with the name '{secretName}' exists.  We will create a new one.");
-                return await AddSecret(secretName, certProps);
+                _logger.LogTrace($"no existing secret with the name '{jobParameters.SecretName}' exists.  We will create a new one.");
+                return await AddSecret(jobParameters);
             }
         }
 
-        public async Task<bool> SecretExists(string secretName) {
+        public async Task<bool> SecretExists(string secretName)
+        {
             _logger.MethodEntry();
 
             var req = new ListSecretsRequest();
@@ -230,38 +233,61 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
             return true;
         }
 
-        private async Task<string> AddSecret(string secretName, CertProperties certProps)
+        private async Task<string> AddSecret(AwsSecretsManagerJobParameters jobParameters)
         {
             _logger.MethodEntry();
-            var req = new CreateSecretRequest() { Name = secretName };
+            CreateSecretRequest req;
             CreateSecretResponse resp;
-            string pemCert;
 
-            // get the PEM formatted string content from the base64pfx
-            try
+            switch (jobParameters.StoreType)
             {
-                pemCert = CertUtilities.ConvertPfxToPem(certProps.Contents, certProps.PrivateKeyPassword);
+                case "AWSSMPEM":
+                    req = GenerateAddSecretPemRequest(jobParameters);
+                    break;
+                case "AWSSMPFX":
+                    req = GenerateAddSecretPfxRequest(jobParameters);
+                    break;
+                case "AWSSMJKS":
+                    req = GenerateAddSecretJksRequest(jobParameters);
+                    break;
+                default:
+                    throw new ArgumentException($"Invalid store type {jobParameters.StoreType}");
             }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Conversion failed: unable to convert certificate contents to PEM\n{ex.Message}");
-                throw;
-            }
-
-            req.SecretString = pemCert;
 
             // include any provided tags
-            var tags = certProps.Tags?.Select(t => new Tag { Key = t.Key, Value = t.Value })?.ToList();
-            if (tags.Any()) req.Tags = tags;
+            // gather any provided tags
+            // for Updates, these need to be applied in a subsequent request
+            // if we are using a tag for identification per cert store definition, we will add it.
+
+            _logger.LogTrace("handling tags if necessary..");
+
+            var tags = new List<Tag>();
+
+            if (jobParameters.StoreProperties.UseTags)
+            {
+                var idTag = new Tag { Key = jobParameters.StoreProperties.TagName, Value = jobParameters.StoreProperties.TagValue };
+                tags.Add(idTag);
+                _logger.LogTrace($"included tag for identification.  Key = \"{idTag.Key}\", Value = \"{idTag.Value}\"");
+            }
+
+            var entryTags = jobParameters.CertProperties.Tags?.Select(t => new Tag { Key = t.Key, Value = t.Value })?.ToList();
+
+            tags.AddRange(entryTags);
+
+            if (tags.Any())
+            {
+                req.Tags = tags; // when adding a secret, tags can be included in the request.
+            }
 
             // include any explicit encryption key ID
-            if (!string.IsNullOrEmpty(certProps.KmsKeyId)) req.KmsKeyId = certProps.KmsKeyId;
+            if (!string.IsNullOrEmpty(jobParameters.CertProperties.KmsKeyId)) req.KmsKeyId = jobParameters.CertProperties.KmsKeyId;
 
             // include any additional replica regions
-            if (certProps.ReplicaRegions != null && certProps.ReplicaRegions.Any())
+            if (jobParameters.CertProperties.ReplicaRegions != null && jobParameters.CertProperties.ReplicaRegions.Any())
             {
-                req.AddReplicaRegions = certProps.ReplicaRegions;
+                req.AddReplicaRegions = jobParameters.CertProperties.ReplicaRegions;
             }
+
             try
             {
                 _logger.LogTrace($"sending request to AWS..");
@@ -280,29 +306,28 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
             return resp?.ARN;
         }
 
-        /// <summary>
-        /// Update existing secret with a new version
-        /// then apply tags and replica regions from entry parameters.
-        /// </summary>
-        /// <param name="certName"></param>
-        /// <param name="certProps"></param>
-        /// <returns></returns>
-        private async Task<string> UpdateSecret(string secretName, CertProperties certProps)
+        private CreateSecretRequest GenerateAddSecretPfxRequest(AwsSecretsManagerJobParameters jobParameters)
+        {
+            throw new NotImplementedException();
+        }
+
+        private CreateSecretRequest GenerateAddSecretJksRequest(AwsSecretsManagerJobParameters jobParameters)
+        {
+            throw new NotImplementedException();
+        }
+
+        private CreateSecretRequest GenerateAddSecretPemRequest(AwsSecretsManagerJobParameters jobParameters)
         {
             _logger.MethodEntry();
 
-            var req = new UpdateSecretRequest() { SecretId = secretName };
-
-            // include any explicit encryption key ID
-            if (!string.IsNullOrEmpty(certProps.KmsKeyId)) req.KmsKeyId = certProps.KmsKeyId;
-
+            var req = new CreateSecretRequest { Name = jobParameters.SecretName };
             string pemCert;
-            UpdateSecretResponse resp;
 
-            // get the PEM formatted string content from the base64pfx
+            // first, format the cert according to the store type (PEM)
+
             try
             {
-                pemCert = CertUtilities.ConvertPfxToPem(certProps.Contents, certProps.PrivateKeyPassword);
+                pemCert = CertUtilities.ConvertPfxToPem(jobParameters.CertProperties.Contents, jobParameters.CertProperties.PrivateKeyPassword);
             }
             catch (Exception ex)
             {
@@ -311,28 +336,46 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
             }
 
             req.SecretString = pemCert;
+            
+            return req;
+        }
 
-            // include any provided tags
-            var tags = certProps.Tags?.Select(t => new Tag { Key = t.Key, Value = t.Value })?.ToList();
-            if (tags.Any())
+        /// <summary>
+        /// Update existing secret with a new version
+        /// then apply tags and replica regions from entry parameters.
+        /// </summary>
+        /// <param name="certName"></param>
+        /// <param name="certProps"></param>
+        /// <returns></returns>
+        private async Task<string> UpdateSecret(AwsSecretsManagerJobParameters jobParameters)
+        {
+            _logger.MethodEntry();
+
+            //var req = new UpdateSecretRequest() { SecretId = jobParameters.SecretName };
+
+            UpdateSecretRequest req;
+
+            switch (jobParameters.StoreType)
             {
-                await ReplaceSecretTagsAsync(secretName, tags);
+                case "AWSSMPEM":
+                    req = GenerateUpdateSecretPemRequest(jobParameters);
+                    break;
+                case "AWSSMPFX":
+                    req = GenerateUpdateSecretPfxRequest(jobParameters);
+                    break;
+                case "AWSSMJKS":
+                    req = GenerateUpdateSecretJksRequest(jobParameters);
+                    break;
+                default:
+                    throw new ArgumentException($"Invalid store type {jobParameters.StoreType}");
             }
 
-            // include any additional replica regions
-            try
-            {
-                if (certProps.ReplicaRegions.Any())
-                {
-                    _logger.LogTrace("replica regions were provided, replacing any existing replica regions..");
-                    await ReplaceSecretReplicaRegionsAsync(secretName, certProps.ReplicaRegions);
-                }
-            }
-            catch (Exception ex) 
-            {
-                _logger.LogTrace($"there was an error when attempting to replace the secret replica regions. {ex.Message}");
-                throw;
-            }
+            // include any explicit encryption key ID
+            if (!string.IsNullOrEmpty(jobParameters.CertProperties.KmsKeyId)) req.KmsKeyId = jobParameters.CertProperties.KmsKeyId;
+
+            UpdateSecretResponse resp;
+
+            // send request to update the secret value
             try
             {
                 _logger.LogTrace($"sending request to AWS..");
@@ -344,11 +387,82 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
                 _logger.LogError($"an error occurred when trying to add the certificate.\n{ex.Message}");
                 throw;
             }
+
+            // gather any provided tags
+            // for Updates, these need to be applied in a subsequent request
+            // if we are using a tag for identification per cert store definition, we will add it.
+
+            _logger.LogTrace("handling tags if necessary..");
+
+            var tags = new List<Tag>();
+
+            if (jobParameters.StoreProperties.UseTags)
+            {
+                var idTag = new Tag { Key = jobParameters.StoreProperties.TagName, Value = jobParameters.StoreProperties.TagValue };
+                tags.Add(idTag);
+                _logger.LogTrace($"included tag for identification.  Key = \"{idTag.Key}\", Value = \"{idTag.Value}\"");
+            }
+
+            var entryTags = jobParameters.CertProperties.Tags?.Select(t => new Tag { Key = t.Key, Value = t.Value })?.ToList();
+
+            tags.AddRange(entryTags);
+
+            if (tags.Any())
+            {
+                _logger.LogTrace($"tags are included, replacing existing tags with the {tags.Count} provided.");
+                await ReplaceSecretTagsAsync(jobParameters.SecretName, tags);
+            }
+
+            // include any additional replica regions
+            // these also need to be replaced in a seperate step for updates
+            try
+            {
+                if (jobParameters.CertProperties.ReplicaRegions.Any())
+                {
+                    _logger.LogTrace("replica regions were provided, replacing any existing replica regions..");
+                    await ReplaceSecretReplicaRegionsAsync(jobParameters.SecretName, jobParameters.CertProperties.ReplicaRegions);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogTrace($"there was an error when attempting to replace the secret replica regions. {ex.Message}");
+                throw;
+            }
             finally
             {
                 _logger.MethodExit();
             }
             return resp?.ARN;
+        }
+
+        private UpdateSecretRequest GenerateUpdateSecretJksRequest(AwsSecretsManagerJobParameters jobParameters)
+        {
+            throw new NotImplementedException();
+        }
+
+        private UpdateSecretRequest GenerateUpdateSecretPfxRequest(AwsSecretsManagerJobParameters jobParameters)
+        {
+            throw new NotImplementedException();
+        }
+
+        private UpdateSecretRequest GenerateUpdateSecretPemRequest(AwsSecretsManagerJobParameters jobParameters)
+        {
+            _logger.MethodEntry();
+            var req = new UpdateSecretRequest { SecretId = jobParameters.SecretName };
+            string pemCert;
+            try
+            {
+                pemCert = CertUtilities.ConvertPfxToPem(jobParameters.CertProperties.Contents, jobParameters.CertProperties.PrivateKeyPassword);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Conversion failed: unable to convert certificate contents to PEM\n{ex.Message}");
+                throw;
+            }
+
+            req.SecretString = pemCert;
+
+            return req;
         }
 
         public async Task RemoveSecret(string secretName)
@@ -395,7 +509,7 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
 
             if (newTags == null)
                 throw new ArgumentNullException(nameof(newTags));
-                        
+
             try
             {
                 // First, get the current tags on the secret

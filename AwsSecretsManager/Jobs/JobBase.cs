@@ -18,6 +18,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 
@@ -47,6 +48,7 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
             _logger.LogTrace($"reading serialized configuration passed from Command to create the AwsSecretsManagerJobParameters object..");            
             JobParameters = new AwsSecretsManagerJobParameters();
             JobParameters.StoreType = config.Capability.Split('.')[1] ?? null;
+            _logger.LogTrace($"storeType: {JobParameters.StoreType}");
             JobParameters.JobType = "Inventory";
             JobParameters.JobId = config.JobId;
             JobParameters.JobHistoryId = config.JobHistoryId;
@@ -55,9 +57,7 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
             _logger.LogTrace("successfully set the store properties");
 
             InitializeAwsClient(config.CertificateStoreDetails);
-
-            _logger.LogTrace("Inventory job initialization complete");
-            _logger.LogTrace($"storetype is {JobParameters.StoreType}");
+            _logger.LogTrace("Inventory job initialization complete");            
 
             _logger.MethodExit();
         }
@@ -69,6 +69,8 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
             _logger.LogTrace($"reading serialized configuration passed from Command to create the AwsSecretsManagerJobParameters object..");
 
             JobParameters = new AwsSecretsManagerJobParameters();
+            JobParameters.StoreType = config.Capability.Split('.')[1] ?? null;
+            _logger.LogTrace($"storeType: {JobParameters.StoreType}");
             JobParameters.JobType = "Management";
             JobParameters.JobId = config.JobId;
             JobParameters.JobHistoryId = config.JobHistoryId;
@@ -163,10 +165,15 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
             // get cert tags entry parameter;  format = [{Region: "<region name>", KmsKeyId: "<key id>"}, ...]
 
             _logger.LogTrace("getting certificate tag values, if any..");
+            var keys = jobProperties.Keys.ToList();
+            var vals = jobProperties.Values.ToList();
 
-            if (jobProperties.ContainsKey("Tags") && !string.IsNullOrEmpty(jobProperties["Tags"] as string))
+            _logger.LogTrace($"raw jobproperties keys: {string.Join(',', keys)}");
+            _logger.LogTrace($"values: {string.Join(',', vals)}");
+
+            if (jobProperties.ContainsKey(EntryParameterKeys.TAGS) && !string.IsNullOrEmpty(jobProperties[EntryParameterKeys.TAGS] as string))
             {
-                var tagsJSON = jobProperties["Tags"]?.ToString();
+                var tagsJSON = jobProperties[EntryParameterKeys.TAGS]?.ToString();
                 var jObj = JObject.Parse(tagsJSON);
                 var tagDict = new Dictionary<string, string>();
 
@@ -183,9 +190,9 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
 
             // get replica regions entry parameter;  format =  [{Region: "<region name>", KmsKeyId: "<key id>"}, ...]            
 
-            if (jobProperties.ContainsKey("ReplicaRegions") && !string.IsNullOrEmpty(jobProperties["ReplicaRegions"] as string))
+            if (jobProperties.ContainsKey(EntryParameterKeys.REPLICAREGIONS) && !string.IsNullOrEmpty(jobProperties[EntryParameterKeys.REPLICAREGIONS] as string))
             {
-                var replicaRegionsJSON = jobProperties["ReplicaRegions"]?.ToString();
+                var replicaRegionsJSON = jobProperties[EntryParameterKeys.REPLICAREGIONS]?.ToString();
                 _logger.LogTrace($"getting replica region values, if any, from the JSON string '{replicaRegionsJSON}'");
 
                 var jObj = JObject.Parse(replicaRegionsJSON);
