@@ -29,7 +29,8 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
             }
         }
 
-        public AwsSecretsManagerJobParameters() { 
+        public AwsSecretsManagerJobParameters()
+        {
             StoreProperties = new CertStoreProperties();
             CertProperties = new CertProperties();
         }
@@ -42,8 +43,8 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
         public string AwsRegion { get; set; } // the client machine value should be the primary AWS region for the authenticating identity
         public string TagName { get; set; } // The name of the tag to use to identify certs that should be managed by this cert store
         public string TagValue { get; set; } // The value of the tag to use to identify certs that should be managed by this cert store; from StorePath
-        public bool UseTags { get { return !string.IsNullOrEmpty(TagName) && !string.IsNullOrEmpty(TagValue); } }
-        public bool UsePrefix { get { return !string.IsNullOrEmpty(NamePrefix); } }
+        public bool UseTags => !string.IsNullOrEmpty(TagName);
+        public bool UsePrefix => !string.IsNullOrEmpty(NamePrefix);
     }
 
     public class CertProperties
@@ -58,7 +59,8 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
         public string Description { get; set; } // the description; can be passed via entry parameter
         public string PrivateKeyPassword { get; set; } // used to extract cert
 
-        public CertProperties() { 
+        public CertProperties()
+        {
             ReplicaRegions = new List<ReplicaRegionType>();
             Tags = new Dictionary<string, string>();
         }

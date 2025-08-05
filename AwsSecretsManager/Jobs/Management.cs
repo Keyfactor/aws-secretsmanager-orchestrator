@@ -91,12 +91,18 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
         public async Task<JobResult> RemoveCertificate()
         {
             _logger.MethodEntry();
-
+            var certArn = string.Empty;
+            var pwdArn = string.Empty;
+            
             try 
             {
                 _logger.LogTrace($"sending request to remove secret named {JobParameters.SecretName}");
-                await _secretsManagerClient.RemoveSecret(JobParameters.SecretName);
-                return SuccessJobResult();
+                (certArn, pwdArn) = await _secretsManagerClient.RemoveSecret(JobParameters.SecretName);
+                var successMsg = $"Successfully removed secret with ARN: {certArn}";
+                if (pwdArn != string.Empty) {
+                    successMsg += $", and it's corresponding password secret with ARN: {pwdArn}";
+                }
+                return SuccessJobResult(successMsg);
             }
             catch (Exception ex) 
             {

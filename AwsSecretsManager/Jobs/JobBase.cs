@@ -108,13 +108,13 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
             if (!string.IsNullOrEmpty(tagName))
             {
                 // using tags
-                if (string.IsNullOrEmpty(tagValue))
-                {
-                    throw new MissingFieldException("tagName is defined, but tagValue is missing.  Both are needed to filter by tags.");
-                }
-                _logger.LogTrace("using tag name and tag value (from store path)");
                 JobParameters.StoreProperties.TagName = tagName;
-                JobParameters.StoreProperties.TagValue = tagValue;
+
+                if (!string.IsNullOrEmpty(tagValue))
+                {
+                    JobParameters.StoreProperties.TagValue = tagValue;                    
+                }
+                _logger.LogTrace($"using tag name \"{tagName}\" and tag value \"{tagValue}\" from store path");
             }
             else
             {
@@ -152,6 +152,8 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
                 Region = JobParameters.StoreProperties.AwsRegion,
                 CustomFields = customFields
             };
+
+            _logger.LogTrace($"set AWS auth params to: \nRoleArn = {authParams.RoleARN}\nRegion={authParams.Region}\nCustomFields={authParams.CustomFields}");
 
             _secretsManagerClient.InitializeClient(authParams, _authUtility);
 
@@ -257,69 +259,7 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
                 returnMessage += (" - " + FlattenException(ex.InnerException));
             }
             return returnMessage;
-        }
-
-        //private (string, string, string, string) ParseStorePath(string awsRegion)
-        //{
-        //    _logger.LogTrace($"parsing values from storepath \"{awsRegion}\"");
-        //    var bracketStart = awsRegion.IndexOf('[');
-        //    var bracketEnd = awsRegion.IndexOf(']');
-        //    (var prefix, var tagName, var tagValue) = (string.Empty, string.Empty, string.Empty);
-
-        //    if (bracketStart == -1)
-        //    {
-        //        return (awsRegion, prefix, tagName, tagValue); // if no brackets, no need to perform the search and parse
-        //    }
-
-        //    // Regex pattern to capture the prefix or tag name/value pairs
-        //    // It looks for bracketContent within square brackets [] and then tries to capture
-        //    // either "prefix" or "tagName" and "tagValue"
-        //    string pattern = @"\[(?:prefix=""(?<prefix>[^""]*)""|tagName=""(?<tagName>[^""]*)""\s+tagValue=""(?<tagValue>[^""]*)"")\]";
-
-        //    // Create a Regex object with the IgnoreCase option
-        //    Regex regex = new Regex(pattern, RegexOptions.IgnoreCase);
-
-        //    Match match = regex.Match(awsRegion);
-
-        //    if (match.Success)
-        //    {
-        //        // Check if the "prefix" group was captured
-        //        if (match.Groups["prefix"].Success)
-        //        {
-        //            prefix = match.Groups["prefix"].Value.Trim();
-
-        //            // remove any leading and trailing slashes
-        //            if (prefix.StartsWith("/") || prefix.StartsWith("\\"))
-        //            {
-        //                prefix = prefix.Substring(1);
-        //            }
-        //            if (prefix.EndsWith("/") || prefix.EndsWith("\\")) { prefix = prefix.Substring(0, prefix.Length - 1); }
-        //        }
-        //        // Check if the "tagName" and "tagValue" groups were captured
-        //        else if (match.Groups["tagName"].Success && match.Groups["tagValue"].Success)
-        //        {
-        //            tagName = match.Groups["tagName"].Value;
-        //            tagValue = match.Groups["tagValue"].Value;
-        //        }
-        //        awsRegion.Remove(bracketStart, bracketEnd);
-        //    }
-        //    else
-        //    {
-        //        // there were brackets, but none of the identifiers (tagName, tagValue or prefix)
-        //        // log a warning, return full value
-        //        _logger.LogWarning($"store path ({awsRegion}) includes brackets but no 'tagName', 'tagValue' or 'prefix' qualifier.  Make sure the store path format is valid.");
-
-        //    }
-
-        //    if (string.IsNullOrEmpty(tagName) && !string.IsNullOrEmpty(tagValue)) {
-        //        var errorMsg = $"if tagValue is provided, tagName must also be provided.";
-        //        _logger.LogError(errorMsg);
-        //        throw new Exception(errorMsg);
-        //    }
-
-        //    return (awsRegion, prefix, tagName, tagValue);
-
-        //}
+        }        
 
         /// <summary>
         /// parses the optional prefix, tagName and tagValue parameters from the store path
@@ -332,7 +272,9 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
         /// <returns>(storepath, prefix, tagName, tagValue)</returns>
         private (string, string, string, string) ParseStorePath(string storePath)
         {
+            _logger.MethodEntry();
 
+            _logger.LogTrace($"parsing storepath \"{storePath}\"");
             string prefix = null;
             string tagName = null;
             string tagValue = null;
@@ -347,8 +289,11 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
                 return (cleanPath, prefix, tagName, tagValue);
             }
 
-            var bracketContent = storePath.Substring(startBracketIndex, endBracketIndex - 2);
+            _logger.LogTrace($"start bracket index: {startBracketIndex}, end bracket index: {endBracketIndex}");
+
+            var bracketContent = storePath.Substring(startBracketIndex+1, endBracketIndex - startBracketIndex - 1);
             var attributes = new Dictionary<string, string>();
+            _logger.LogTrace($"bracket content: {bracketContent}");
 
             // Split by quotes and extract key-value pairs
             var parts = bracketContent.Split('"');
@@ -363,6 +308,15 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
                 }
             }
 
+            cleanPath = storePath.Replace(bracketContent, string.Empty)
+                .Replace("[", string.Empty)
+                .Replace("]", string.Empty)
+                .Trim();
+
+            _logger.LogTrace($"cleaned store path (AWS region): {cleanPath}");
+            // get region from storepath
+
+
             // Validate combinations
             if (attributes.ContainsKey("prefix"))
                 prefix = attributes["prefix"];
@@ -373,7 +327,7 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
             if (attributes.ContainsKey("tagValue"))
                 tagValue = attributes["tagValue"];
 
-            return (storePath, prefix, tagName, tagValue);
+            return (cleanPath, prefix, tagName, tagValue);
         }
 
     }
