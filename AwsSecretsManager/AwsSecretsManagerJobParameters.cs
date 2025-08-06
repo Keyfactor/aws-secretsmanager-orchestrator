@@ -25,7 +25,7 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
             get
             {
                 if (string.IsNullOrEmpty(StoreProperties.NamePrefix)) return CertProperties.Alias;
-                return $"{StoreProperties.NamePrefix}/{CertProperties.Alias}";
+                return $"{StoreProperties.NamePrefix}{CertProperties.Alias}";
             }
         }
 

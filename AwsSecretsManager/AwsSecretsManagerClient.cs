@@ -362,7 +362,27 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
 
         private (CreateSecretRequest, CreateSecretRequest) GenerateAddSecretJksRequest(AwsSecretsManagerJobParameters jobParameters)
         {
-            throw new NotImplementedException();
+            _logger.MethodEntry();
+            var pwdSecretName = jobParameters.SecretName + "-pw";
+
+            var createStoreReq = new CreateSecretRequest { Name = jobParameters.SecretName };
+
+            var createPwdReq = new CreateSecretRequest
+            {
+                Name = pwdSecretName,
+                SecretString = jobParameters.CertProperties.PrivateKeyPassword,
+                Tags = new List<Tag> { new Tag { Key = "PasswordFor", Value = jobParameters.SecretName } }
+            };
+
+            // we create the cert store binarySecret value by converting the base64 encoded PFX
+            var pfxBytes = Convert.FromBase64String(jobParameters.CertProperties.Contents);
+            var jksBytes = CertUtilities.ConvertPfxToJks(pfxBytes, jobParameters.CertProperties.PrivateKeyPassword);
+            var stream = new MemoryStream(jksBytes);
+            createStoreReq.SecretBinary = stream;
+            createStoreReq.Tags = new List<Tag> { new Tag { Key = TagNames.CERT_SECRET_PASSWORD_NAME, Value = createPwdReq.Name } }; // add the tag identifying the password secret
+
+            _logger.MethodExit();
+            return (createStoreReq, createPwdReq);
         }
 
         private CreateSecretRequest GenerateAddSecretPemRequest(AwsSecretsManagerJobParameters jobParameters)
@@ -497,7 +517,25 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
 
         private (UpdateSecretRequest, UpdateSecretRequest) GenerateUpdateSecretJksRequest(AwsSecretsManagerJobParameters jobParameters)
         {
-            throw new NotImplementedException();
+            _logger.MethodEntry();
+            var pwdSecretName = jobParameters.SecretName + "-pw";
+
+            var updateStoreReq = new UpdateSecretRequest { SecretId = jobParameters.SecretName };
+
+            var updatePwdRequest = new UpdateSecretRequest
+            {
+                SecretId = pwdSecretName,
+                SecretString = jobParameters.CertProperties.PrivateKeyPassword
+            };
+
+            // we create the cert store binarySecret value by converting the base64 encoded PFX
+            var pfxBytes = Convert.FromBase64String(jobParameters.CertProperties.Contents);
+            var jksBytes = CertUtilities.ConvertPfxToJks(pfxBytes, jobParameters.CertProperties.PrivateKeyPassword);
+            var stream = new MemoryStream(jksBytes);
+            updateStoreReq.SecretBinary = stream;
+
+            _logger.MethodExit();
+            return (updateStoreReq, updatePwdRequest);
         }
 
         private (UpdateSecretRequest, UpdateSecretRequest) GenerateUpdateSecretPfxRequest(AwsSecretsManagerJobParameters jobParameters)

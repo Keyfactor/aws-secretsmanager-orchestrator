@@ -7,6 +7,8 @@ using Org.BouncyCastle.Crypto;
 using System.Collections.Generic;
 using Org.BouncyCastle.OpenSsl;
 using System.Linq;
+using Org.BouncyCastle.Pkcs;
+using Org.BouncyCastle.Security;
 
 namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
 {
@@ -132,6 +134,93 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
             catch (FormatException ex)
             {
                 throw new ArgumentException("Invalid base64 string format", nameof(base64Pfx), ex);
+            }
+        }
+
+        /// <summary>
+        /// Converts a PFX certificate store to a JKS certificate store
+        /// </summary>
+        /// <param name="pfxData">PFX certificate store binary data</param>
+        /// <param name="pfxPassword">PFX password</param>
+        /// <param name="jksPassword">JKS password (if null, uses same as PFX password)</param>
+        /// <param name="defaultAlias">Default alias name for certificates (if null, uses certificate subject CN)</param>
+        /// <returns>JKS certificate store as byte array</returns>
+        public static byte[] ConvertPfxToJks(byte[] pfxData, string pfxPassword)
+        {
+            if (pfxData == null || pfxData.Length == 0)
+                throw new ArgumentException("PFX data cannot be null or empty", nameof(pfxData));
+
+            // Use same password for JKS if not specified
+            var jksPassword = pfxPassword;
+
+            try
+            {
+                // Load the PFX using BouncyCastle
+                var pfxStore = new Pkcs12StoreBuilder().Build();
+                using (var pfxStream = new MemoryStream(pfxData))
+                {
+                    pfxStore.Load(pfxStream, pfxPassword?.ToCharArray() ?? new char[0]);
+                }
+
+                // Create new JKS store (using PKCS12 format which is compatible)
+                var jksStore = new Pkcs12StoreBuilder().Build();
+
+                // Get all aliases from PFX
+                var aliases = pfxStore.Aliases.Cast<string>().ToList();
+                var aliasCounter = 1;
+
+                foreach (string originalAlias in aliases)
+                {
+                    // Get private key if it exists
+                    AsymmetricKeyParameter privateKey = null;
+                    if (pfxStore.IsKeyEntry(originalAlias))
+                    {
+                        var keyEntry = pfxStore.GetKey(originalAlias);
+                        privateKey = keyEntry?.Key;
+                    }
+
+                    // Get certificate chain
+                    var certChain = pfxStore.GetCertificateChain(originalAlias);
+                    if (certChain == null || certChain.Length == 0)
+                    {
+                        // Try to get standalone certificate
+                        var cert = pfxStore.GetCertificate(originalAlias);
+                        if (cert != null)
+                        {
+                            certChain = new X509CertificateEntry[] { cert };
+                        }
+                    }
+
+                    if (certChain != null && certChain.Length > 0)
+                    {
+                        // Determine alias name for JKS
+                        string jksAlias = GenerateJksAlias(originalAlias, certChain[0].Certificate, null, aliasCounter);
+
+                        if (privateKey != null)
+                        {
+                            // Add private key entry with certificate chain
+                            jksStore.SetKeyEntry(jksAlias, new AsymmetricKeyEntry(privateKey), certChain);
+                        }
+                        else
+                        {
+                            // Add certificate-only entry
+                            jksStore.SetCertificateEntry(jksAlias, certChain[0]);
+                        }
+
+                        aliasCounter++;
+                    }
+                }
+
+                // Save JKS to byte array
+                using (var jksStream = new MemoryStream())
+                {
+                    jksStore.Save(jksStream, jksPassword?.ToCharArray() ?? new char[0], new SecureRandom());
+                    return jksStream.ToArray();
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"Failed to convert PFX to JKS: {ex.Message}", ex);
             }
         }
 
@@ -265,6 +354,61 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
             }
 
             return (certificates, privateKeyIncluded);
+        }
+
+        /// <summary>
+        /// Generate appropriate alias name for JKS entry
+        /// </summary>
+        private static string GenerateJksAlias(string originalAlias, Org.BouncyCastle.X509.X509Certificate certificate, string defaultAlias, int counter)
+        {
+            if (!string.IsNullOrEmpty(defaultAlias))
+                return counter > 1 ? $"{defaultAlias}_{counter}" : defaultAlias;
+
+            if (!string.IsNullOrEmpty(originalAlias) && !originalAlias.Equals("1", StringComparison.OrdinalIgnoreCase))
+                return SanitizeAlias(originalAlias);
+
+            // Try to extract CN from certificate subject
+            try
+            {
+                var subjectDN = certificate.SubjectDN.ToString();
+                var cnStart = subjectDN.IndexOf("CN=", StringComparison.OrdinalIgnoreCase);
+                if (cnStart >= 0)
+                {
+                    cnStart += 3; // Skip "CN="
+                    var cnEnd = subjectDN.IndexOf(",", cnStart);
+                    var cn = cnEnd > cnStart ? subjectDN.Substring(cnStart, cnEnd - cnStart) : subjectDN.Substring(cnStart);
+                    cn = SanitizeAlias(cn.Trim());
+                    if (!string.IsNullOrEmpty(cn))
+                        return cn;
+                }
+            }
+            catch
+            {
+                // Fall back to default naming
+            }
+
+            return $"certificate_{counter}";
+        }
+
+        /// <summary>
+        /// Sanitize alias name for JKS compatibility
+        /// </summary>
+        private static string SanitizeAlias(string alias)
+        {
+            if (string.IsNullOrEmpty(alias))
+                return alias;
+
+            // Replace invalid characters and convert to lowercase
+            var sanitized = alias
+                .Replace(" ", "_")
+                .Replace(".", "_")
+                .Replace("*", "wildcard")
+                .Replace("@", "_at_")
+                .ToLowerInvariant();
+
+            // Remove any remaining invalid characters
+            var validChars = sanitized.Where(c => char.IsLetterOrDigit(c) || c == '_' || c == '-').ToArray();
+            return new string(validChars);
         }
     }
 

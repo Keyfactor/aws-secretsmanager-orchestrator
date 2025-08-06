@@ -17,6 +17,7 @@ using Keyfactor.Logging;
 using Keyfactor.Orchestrators.Extensions;
 using Keyfactor.Orchestrators.Extensions.Interfaces;
 using Microsoft.Extensions.Logging;
+using Org.BouncyCastle.Pkcs;
 
 namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
 {
@@ -112,7 +113,7 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
                         (inventoryItems, warnings) = ConvertSecretsPfx(secrets).Result;
                         break;
                     case "AWSSMJKS":
-                        (inventoryItems, warnings) = ConvertSecretsJks(secrets);
+                        (inventoryItems, warnings) = ConvertSecretsJks(secrets).Result;
                         break;
                     default:
                         throw new ArgumentException($"Invalid store type {JobParameters.StoreType}");
@@ -152,9 +153,87 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
             }
         }
 
-        private (List<CurrentInventoryItem>, List<string>) ConvertSecretsJks(List<SecretValueEntry> secrets)
+        private async Task<(List<CurrentInventoryItem>, List<string>)> ConvertSecretsJks(List<SecretValueEntry> secrets)
         {
-            throw new NotImplementedException();
+            _logger.MethodEntry();
+
+            var inventory = new List<CurrentInventoryItem>();
+            var warnings = new List<string>();
+
+            foreach (var secret in secrets)
+            {
+                var certificateChain = new List<string>();
+                byte[] jksBytes = null;
+                var chainCerts = new List<string>();
+                var hasPrivateKey = false;
+                
+                try
+                {
+                    var jksPassword = await _secretsManagerClient.GetPassword(secret);
+
+                    // Load JKS using BouncyCastle's PKCS12Store (which can handle JKS format)
+                    var store = new Pkcs12StoreBuilder().Build();
+
+                    using (var stream = new MemoryStream(jksBytes))
+                    {
+                        // Load the keystore with password
+                        store.Load(stream, jksPassword?.ToCharArray() ?? new char[0]);
+                    }
+
+                    // Get all aliases in the keystore
+                    var aliases = store.Aliases.Cast<string>().ToList();
+
+                    foreach (string alias in aliases)
+                    {
+                        // Get certificate chain for this alias
+                        var certChain = store.GetCertificateChain(alias);
+
+                        if (certChain != null && certChain.Length > 0)
+                        {
+                            // Add all certificates in this chain
+                            foreach (var certEntry in certChain)
+                            {
+                                var certificate = certEntry.Certificate;
+                                var derBytes = certificate.GetEncoded();
+                                var base64Cert = Convert.ToBase64String(derBytes);
+                                chainCerts.Add(base64Cert);
+                            }
+                        }
+                        else
+                        {
+                            // Check if there's a standalone certificate (not part of a chain)
+                            var cert = store.GetCertificate(alias);
+                            if (cert != null)
+                            {
+                                var derBytes = cert.Certificate.GetEncoded();
+                                var base64Cert = Convert.ToBase64String(derBytes);
+                                chainCerts.Add(base64Cert);
+                            }
+                        }
+                        if (store.IsKeyEntry(alias)) hasPrivateKey = true;
+                    }
+
+                    //return certificates.ToArray();
+                    
+                    var inventoryItem = new CurrentInventoryItem
+                    {
+                        Alias = secret.Name,
+                        Certificates = certificateChain,
+                        UseChainLevel = certificateChain.Count > 1,
+                        PrivateKeyEntry = hasPrivateKey
+                    };
+
+                    inventory.Add(inventoryItem);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError($"There was an error attempting to retreive the store password for {secret.Name}: {ex.Message}");
+                    warnings.Add(ex.Message);
+                    continue;
+                }
+            }
+            _logger.MethodExit();
+            return (inventory, warnings);
         }
 
         /// <summary>
