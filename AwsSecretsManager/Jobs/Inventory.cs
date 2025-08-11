@@ -13,6 +13,7 @@ using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using Amazon.SecretsManager.Model;
+using Keyfactor.Extensions.Orchestrators.AwsSecretsManager.models;
 using Keyfactor.Logging;
 using Keyfactor.Orchestrators.Extensions;
 using Keyfactor.Orchestrators.Extensions.Interfaces;
@@ -46,64 +47,14 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
             {
                 // first, we compose filter criteria from parameters
 
-                var filters = new List<Filter>();
-
-                if (JobParameters.StoreProperties.UseTags) // we will generate a filter based on provided tag name and value
-                {
-                    _logger.LogTrace("using tags for identification, setting the tag filter values..");
-                    var tagNameFilter = new Filter()
-                    {
-                        Key = AWSFilterParameter.TAG_KEY,
-                        Values = new List<string>() { JobParameters.StoreProperties.TagName }
-                    };
-                    filters.Add(tagNameFilter);
-
-                    if (!string.IsNullOrEmpty(JobParameters.StoreProperties.TagValue))
-                    {
-                        var tagValueFilter = new Filter()
-                        {
-                            Key = AWSFilterParameter.TAG_VALUE,
-                            Values = new List<string> { JobParameters.StoreProperties.TagValue }
-                        };
-                        filters.Add(tagValueFilter);
-                    }
-                }
-                else
-                {
-                    if (JobParameters.StoreProperties.UsePrefix)
-                    {
-                        _logger.LogTrace("using path prefix for identification, setting the secret name filter value..");
-
-                        var pathFilter = new Filter()
-                        {
-                            Key = AWSFilterParameter.NAME, // searches prefix (not full match) by default
-                            Values = new List<string>() { JobParameters.StoreProperties.NamePrefix }
-                        };
-
-                        filters.Add(pathFilter);
-                    }
-                }
-
-                _logger.LogTrace($"determined cert filter criteria to be: ");
-
-                if (filters.Count == 0)
-                {
-                    _logger.LogTrace("no filter; all certificates in the region that are available to the authenticating identity");
-                }
-
-                filters.ForEach(filter =>
-                {
-                    _logger.LogTrace($"filter key: {filter.Key}");
-                    _logger.LogTrace($"filter value: {filter.Values.First()}");
-                });
+                var filters = GetSecretFilters();
 
                 // now get the secrets
 
                 var secrets = _secretsManagerClient.ListSecrets(filters).Result;
+                                
+                // finally, we convert each to an inventoryItem according to the store type
 
-                // check for validity and parse-ability
-                // then convert to base64 encoded cer
-                // this process differs for each store type
                 switch (JobParameters.StoreType)
                 {
                     case "AWSSMPEM":
@@ -130,7 +81,7 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
                 if (warningCount > 0 && inventoryItems.Count > 0)
                 {
                     resultMessage += $"\n{warningCount} certificate(s) could not be processed.\nReview the logs on the orchestrator for more details.";
-                    result = WarningJobResult(resultMessage);
+                    result = SuccessJobResult(resultMessage); // returning a warning result schedules another job; returning success.
                     succeeded = true;
                 }
 
@@ -153,28 +104,111 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
             }
         }
 
-        private async Task<(List<CurrentInventoryItem>, List<string>)> ConvertSecretsJks(List<SecretValueEntry> secrets)
+        /// <summary>
+        /// Generates a list of Filters to use when querying AWS Secrets.
+        /// The value for the filters is determined by the provided job parameters
+        /// </summary>
+        /// <returns>
+        /// A list of filters to apply when querying secrets for the certificate store
+        /// </returns>
+        private List<Filter> GetSecretFilters()
+        {
+            _logger.MethodEntry();
+
+            var filters = new List<Filter>();
+
+            if (JobParameters.StoreProperties.UseTags) // we will generate a filter based on provided tag name and value
+            {
+                _logger.LogTrace("using tags for identification, setting the tag filter values..");
+                var tagNameFilter = new Filter()
+                {
+                    Key = AWSFilterParameter.TAG_KEY,
+                    Values = new List<string>() { JobParameters.StoreProperties.TagName }
+                };
+                filters.Add(tagNameFilter);
+
+                if (!string.IsNullOrEmpty(JobParameters.StoreProperties.TagValue))
+                {
+                    var tagValueFilter = new Filter()
+                    {
+                        Key = AWSFilterParameter.TAG_VALUE,
+                        Values = new List<string> { JobParameters.StoreProperties.TagValue }
+                    };
+                    filters.Add(tagValueFilter);
+                }
+            }
+
+            if (JobParameters.StoreProperties.UsePrefix)
+            {
+                _logger.LogTrace("using path prefix for identification, setting the secret name filter value..");
+
+                var pathFilter = new Filter()
+                {
+                    Key = AWSFilterParameter.NAME, // searches prefix (not full match) by default
+                    Values = new List<string>() { JobParameters.StoreProperties.NamePrefix }
+                };
+
+                filters.Add(pathFilter);
+            }
+            _logger.LogTrace($"determined cert filter criteria to be: ");
+
+            if (filters.Count == 0)
+            {
+                _logger.LogTrace("no filter; all certificates in the region that are available to the authenticating identity");
+            }
+
+            filters.ForEach(filter =>
+            {
+                _logger.LogTrace($"filter key: {filter.Key}");
+                _logger.LogTrace($"filter value: {filter.Values.First()}");
+            });
+
+            _logger.MethodExit();
+            return filters;
+        }
+
+        //TODO: figure out why the values are coming back empty..
+        private async Task<(List<CurrentInventoryItem>, List<string>)> ConvertSecretsJks(List<AWSSecret> secrets)
         {
             _logger.MethodEntry();
 
             var inventory = new List<CurrentInventoryItem>();
             var warnings = new List<string>();
 
-            foreach (var secret in secrets)
+            // for JKS cert secrets, a tag containing the password secret name is required.  Filter out any that do not have this.
+
+            var certSecrets = secrets.Where(s => s.SecretBinary != null && s.Tags.Any(t => t.Key.ToUpper() == TagNames.CERT_SECRET_PASSWORD_NAME))?.ToList();
+
+            if (certSecrets == null || certSecrets.Count < 1)
+            {
+                _logger.LogWarning($"none of the {secrets.Count} secrets contained both the required Tag named '{TagNames.CERT_SECRET_PASSWORD_NAME}' and a binary secret value.");
+                return (inventory, null);
+            }
+
+            _logger.LogTrace($"{secrets.Count - certSecrets.Count} secrets did not have the Tag '{TagNames.CERT_SECRET_PASSWORD_NAME}' or were missing a binary secert value and will be skipped.");
+
+
+            foreach (var secret in certSecrets)
             {
                 var certificateChain = new List<string>();
-                byte[] jksBytes = null;
                 var chainCerts = new List<string>();
                 var hasPrivateKey = false;
-                
+
                 try
                 {
                     var jksPassword = await _secretsManagerClient.GetPassword(secret);
 
+                    if (jksPassword == null)
+                    {
+                        var passwordSecretName = secret.Tags.First(t => t.Key.ToUpper() == TagNames.CERT_SECRET_PASSWORD_NAME.ToUpper())?.Value;
+                        warnings.Add($"Unable to retrieve the password from the secret named {passwordSecretName} containing the cert store password for {secret.Name}");
+                        continue;
+                    }
+
                     // Load JKS using BouncyCastle's PKCS12Store (which can handle JKS format)
                     var store = new Pkcs12StoreBuilder().Build();
 
-                    using (var stream = new MemoryStream(jksBytes))
+                    using (var stream = new MemoryStream(secret.SecretBinary))
                     {
                         // Load the keystore with password
                         store.Load(stream, jksPassword?.ToCharArray() ?? new char[0]);
@@ -214,7 +248,7 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
                     }
 
                     //return certificates.ToArray();
-                    
+
                     var inventoryItem = new CurrentInventoryItem
                     {
                         Alias = secret.Name,
@@ -241,40 +275,42 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
         /// </summary>
         /// <param name="secrets"></param>
         /// <returns>A list of CurrentInventoryItem</returns>
-        private async Task<(List<CurrentInventoryItem>, List<string>)> ConvertSecretsPfx(List<SecretValueEntry> secrets)
+        private async Task<(List<CurrentInventoryItem>, List<string>)> ConvertSecretsPfx(List<AWSSecret> secrets)
         {
             _logger.MethodEntry();
 
             var inventory = new List<CurrentInventoryItem>();
             var warnings = new List<string>();
 
-            foreach (var secret in secrets)
+            // for PFX cert secrets, a tag containing the password secret name is required.  Filter out any that do not have this.
+
+            var certSecrets = secrets.Where(s => s.SecretBinary != null && s.Tags.Any(t => t.Key.ToUpper() == TagNames.CERT_SECRET_PASSWORD_NAME))?.ToList();
+
+            if (certSecrets == null || certSecrets.Count < 1) {
+                _logger.LogWarning($"none of the {secrets.Count} secrets contained both the required Tag named '{TagNames.CERT_SECRET_PASSWORD_NAME}' and a binary secret value.");
+                return (inventory, null); 
+            }
+
+            _logger.LogTrace($"{secrets.Count - certSecrets.Count} secrets did not have the Tag '{TagNames.CERT_SECRET_PASSWORD_NAME}' or were missing a binary secert value and will be skipped.");
+
+            foreach (var secret in certSecrets)
             {
                 var certificateChain = new List<string>();
-                byte[] pfxBytes = null;
 
                 try
                 {
                     var pfxPassword = await _secretsManagerClient.GetPassword(secret);
-
+                    
                     if (pfxPassword == null)
                     {
-                        warnings.Add($"Unable to find a secret containing the cert store password for {secret.Name}");
+                        var passwordSecretName = secret.Tags.First(t => t.Key.ToUpper() == TagNames.CERT_SECRET_PASSWORD_NAME.ToUpper())?.Value;
+                        warnings.Add($"Unable to retrieve the password from the secret named {passwordSecretName} containing the cert store password for {secret.Name}");
                         continue;
                     }
                     // now that we have the password, use it to extract the public certificates
-                    
-                    if (secret.SecretBinary != null)
-                    {
-                        // Convert the MemoryStream (SecretBinary) to a byte array
-                        using (MemoryStream memoryStream = secret.SecretBinary)
-                        {
-                            pfxBytes = memoryStream.ToArray();
-                        }
-                    }
-
+                                        
                     // Load the PFX file
-                    var pfx = new X509Certificate2(pfxBytes, pfxPassword, X509KeyStorageFlags.EphemeralKeySet);
+                    var pfx = new X509Certificate2(secret.SecretBinary, pfxPassword, X509KeyStorageFlags.EphemeralKeySet);
 
                     // build the chain
                     var chain = new X509Chain();
@@ -291,7 +327,7 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
                         var derBytes = cert.GetRawCertData(); // Gets DER-encoded certificate
                         var base64Der = Convert.ToBase64String(derBytes);
                         certificateChain.Add(base64Der);
-                    }                   
+                    }
 
                     var inventoryItem = new CurrentInventoryItem
                     {
@@ -318,7 +354,7 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
             return (inventory, warnings);
         }
 
-        private (List<CurrentInventoryItem>, List<string>) ConvertSecretsPem(List<SecretValueEntry> secrets)
+        private (List<CurrentInventoryItem>, List<string>) ConvertSecretsPem(List<AWSSecret> secrets)
         {
             _logger.MethodEntry();
             var warnings = new List<string>();
@@ -336,8 +372,6 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
                     // for AWSSMPEM, they will be stored as a secret string in PEM format.
                     var secretString = potentialCert.SecretString;
 
-                    //_logger.LogTrace($"secret string: {secretString}");
-
                     // try pemtoder
                     var certBytes = PKI.PEM.PemUtilities.PEMToDER(potentialCert.SecretString);
                     _logger.LogTrace("successfully tested conversion from PEM to DER");
@@ -354,7 +388,7 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
                 {
                     // it failed; log a warning and continue.
                     var msg =
-$@"Unable to perform PEM to DER conversion on secret named {potentialCert.Name}.
+        $@"Unable to perform PEM to DER conversion on secret named {potentialCert.Name}.
 cert contents:
 {{potentialCert.SecretString}}
 ""Exception: {{ex.Message}}";

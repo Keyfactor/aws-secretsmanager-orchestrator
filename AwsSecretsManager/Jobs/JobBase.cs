@@ -45,7 +45,7 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
         public virtual void Initialize(InventoryJobConfiguration config)
         {
             _logger.MethodEntry();
-            _logger.LogTrace($"reading serialized configuration passed from Command to create the AwsSecretsManagerJobParameters object..");            
+            _logger.LogTrace($"reading serialized configuration passed from Command to create the AwsSecretsManagerJobParameters object..");
             JobParameters = new AwsSecretsManagerJobParameters();
             JobParameters.StoreType = config.Capability.Split('.')[1] ?? null;
             _logger.LogTrace($"storeType: {JobParameters.StoreType}");
@@ -57,7 +57,7 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
             _logger.LogTrace("successfully set the store properties");
 
             InitializeAwsClient(config.CertificateStoreDetails);
-            _logger.LogTrace("Inventory job initialization complete");            
+            _logger.LogTrace("Inventory job initialization complete");
 
             _logger.MethodExit();
         }
@@ -112,19 +112,19 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
 
                 if (!string.IsNullOrEmpty(tagValue))
                 {
-                    JobParameters.StoreProperties.TagValue = tagValue;                    
+                    JobParameters.StoreProperties.TagValue = tagValue;
                 }
                 _logger.LogTrace($"using tag name \"{tagName}\" and tag value \"{tagValue}\" from store path");
             }
             else
             {
                 _logger.LogTrace($"tag is undefined, checking for path value..");
+            }
 
-                if (!string.IsNullOrEmpty(prefix) && prefix?.Trim() != "/" && prefix?.Trim() != "\\")
-                {
-                    _logger.LogTrace($"using path prefix '{prefix}' in secret name");
-                    JobParameters.StoreProperties.NamePrefix = prefix;
-                }
+            if (!string.IsNullOrEmpty(prefix) && prefix?.Trim() != "/" && prefix?.Trim() != "\\")
+            {
+                _logger.LogTrace($"using path prefix '{prefix}' in secret name");
+                JobParameters.StoreProperties.NamePrefix = prefix;
             }
         }
 
@@ -259,7 +259,7 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
                 returnMessage += (" - " + FlattenException(ex.InnerException));
             }
             return returnMessage;
-        }        
+        }
 
         /// <summary>
         /// parses the optional prefix, tagName and tagValue parameters from the store path
@@ -291,7 +291,7 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
 
             _logger.LogTrace($"start bracket index: {startBracketIndex}, end bracket index: {endBracketIndex}");
 
-            var bracketContent = storePath.Substring(startBracketIndex+1, endBracketIndex - startBracketIndex - 1);
+            var bracketContent = storePath.Substring(startBracketIndex + 1, endBracketIndex - startBracketIndex - 1);
             var attributes = new Dictionary<string, string>();
             _logger.LogTrace($"bracket content: {bracketContent}");
 

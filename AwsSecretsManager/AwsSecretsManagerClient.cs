@@ -10,6 +10,7 @@ using Amazon.SecretsManager;
 using Amazon.SecretsManager.Model;
 using Keyfactor.Extensions.Aws;
 using Keyfactor.Extensions.Aws.Models;
+using Keyfactor.Extensions.Orchestrators.AwsSecretsManager.models;
 using Keyfactor.Logging;
 using Microsoft.Extensions.Logging;
 using System;
@@ -62,11 +63,11 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
         /// Lists all secrets that contain the provided Tag Key value.  
         /// We retreive these in batches of maximum 20 size and loop until we've gotten them all.
         /// </summary>
-        public async Task<List<SecretValueEntry>> ListSecrets(List<Filter> filters)
+        public async Task<List<AWSSecret>> ListSecrets(List<Filter> filters)
         {
             _logger.MethodEntry();
-
-            var results = new List<SecretValueEntry>();
+            var results = new List<AWSSecret>();
+            var secretContents = new List<SecretValueEntry>();
             var secretNames = new List<string>();
 
             string nextToken = null;
@@ -76,7 +77,6 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
             try
             {
                 _logger.LogTrace("retreiving secret names...");
-
                 do
                 {
                     var request = new ListSecretsRequest
@@ -112,18 +112,55 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
                     };
 
                     var response = await _secretsManagerClient.BatchGetSecretValueAsync(request);
-                    results.AddRange(response.SecretValues);
+
+                    // now we will filter out entries that do not have a binary secret for AWSSMPFX, and AWSSMJKS
+
+                    var secrets = response.SecretValues;
+
+                    secretContents.AddRange(response.SecretValues);
+
                     nextToken = response.NextToken;
                     _logger.LogTrace($"got {response.SecretValues.Count} secret value entries.");
                     _logger.LogTrace("retreiving next batch of up to 20 entries..");
                 }
                 while (nextToken != null);
                 _logger.LogTrace("completed secret value retreival");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"There was an error when attempting to retreive the {secretNames.Count} secret values: {LogHandler.FlattenException(ex)}");
+                throw;
+            }
+
+            var secretName = string.Empty;
+
+            // now we need to retreive the associated tags for each secret
+            try
+            {
+
+                foreach (var secret in secretContents)
+                {
+                    secretName = secret.Name;
+                    var tags = await GetSecretTags(secretName);
+                    var awsSecret = new AWSSecret
+                    {
+                        Name = secretName,
+                        ARN = secret.ARN,
+                        SecretBinary = secret.SecretBinary?.ToArray(),
+                        SecretString = secret.SecretString,
+                        Tags = tags,
+                        VersionId = secret.VersionId
+                    };
+
+                    results.Add(awsSecret);
+                }
+
                 return results;
             }
             catch (Exception ex)
             {
-                _logger.LogError($"There was an error when attempting to retreive the list of secrets: {LogHandler.FlattenException(ex)}");
+                var msg = $"There was an error retreiving the Tags for secret {secretName}: {ex.Message}";
+                _logger.LogError(msg, ex);
                 throw;
             }
             finally
@@ -210,7 +247,7 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
             {
                 _logger.LogTrace($"sending request to AWS..");
                 resp = await _secretsManagerClient.ListSecretsAsync(req);
-                _logger.LogTrace($"request was successful");               
+                _logger.LogTrace($"request was successful");
 
                 _logger.LogTrace($"returned {resp.SecretList.Count} secret(s) beginning with \"{secretName}\"");
 
@@ -272,16 +309,17 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
             {
                 var idTag = new Tag { Key = jobParameters.StoreProperties.TagName };
                 idTag.Value = jobParameters.StoreProperties.TagValue ?? string.Empty; // a tag value is not required; so may not exist
-            
-            tags.Add(idTag);
+
+                tags.Add(idTag);
                 _logger.LogTrace($"included tag for identification.  Key = \"{idTag.Key}\", Value = \"{idTag.Value ?? ""}\"");
             }
 
-            var entryTags = jobParameters.CertProperties.Tags?.Select(t => {
+            var entryTags = jobParameters.CertProperties.Tags?.Select(t =>
+            {
                 var tag = new Tag { Key = t.Key };
                 tag.Value = t.Value ?? string.Empty;
                 return tag;
-                })?.ToList();
+            })?.ToList();
 
             tags.AddRange(entryTags);
 
@@ -304,8 +342,8 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
 
             try
             {
-                _logger.LogTrace($"writing the secret{(pwdReq != null ? "s":"")} to AWS..");
-                
+                _logger.LogTrace($"writing the secret{(pwdReq != null ? "s" : "")} to AWS..");
+
                 if (pwdReq != null)
                 {
                     _logger.LogTrace($"we will first write the secret containing the password as {pwdReq.Name}");
@@ -315,7 +353,7 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
 
                 _logger.LogTrace($"sending request to create cert secret named {req.Name}");
                 resp = await _secretsManagerClient.CreateSecretAsync(req);
-                _logger.LogTrace($"successfully created secret containing the certificate\nARN: {resp.ARN}\nversion ID: {resp.VersionId}");                
+                _logger.LogTrace($"successfully created secret containing the certificate\nARN: {resp.ARN}\nversion ID: {resp.VersionId}");
             }
             catch (Exception ex)
             {
@@ -479,13 +517,14 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
 
             // for JKS or PFX stores..
 
-            if (updatePwReq != null) {
+            if (updatePwReq != null)
+            {
                 _logger.LogTrace($"setting a tag with the password secret name..");
                 tags.Add(new Tag { Key = TagNames.CERT_SECRET_PASSWORD_NAME, Value = updatePwReq.SecretId });
-                
-                var pwdTags = new List<Tag> { new Tag { Key = TagNames.PASSWORD_SECRET_CERT_NAME, Value = updateCertReq.SecretId } };                
+
+                var pwdTags = new List<Tag> { new Tag { Key = TagNames.PASSWORD_SECRET_CERT_NAME, Value = updateCertReq.SecretId } };
                 await UpdateSecretTagsAsync(updatePwReq.SecretId, pwdTags);
-            }            
+            }
 
             if (tags.Any())
             {
@@ -540,7 +579,7 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
 
         private (UpdateSecretRequest, UpdateSecretRequest) GenerateUpdateSecretPfxRequest(AwsSecretsManagerJobParameters jobParameters)
         {
-           _logger.MethodEntry();
+            _logger.MethodEntry();
             var pwdSecretName = jobParameters.SecretName + "-pw";
 
             var updateStoreReq = new UpdateSecretRequest { SecretId = jobParameters.SecretName };
@@ -548,14 +587,14 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
             var updatePwdRequest = new UpdateSecretRequest
             {
                 SecretId = pwdSecretName,
-                SecretString = jobParameters.CertProperties.PrivateKeyPassword                
+                SecretString = jobParameters.CertProperties.PrivateKeyPassword
             };
 
             // we create the cert store binarySecret value by converting the base64 encoded PFX
             var storeBytes = Convert.FromBase64String(jobParameters.CertProperties.Contents);
             var stream = new MemoryStream(storeBytes);
             updateStoreReq.SecretBinary = stream;
-            
+
             _logger.MethodExit();
             return (updateStoreReq, updatePwdRequest);
         }
@@ -586,7 +625,7 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
         /// </summary>
         /// <param name="secretName"></param>
         /// <returns></returns>
-        public async Task<(string,string)> RemoveSecret(string secretName)
+        public async Task<(string, string)> RemoveSecret(string secretName)
         {
             _logger.MethodEntry();
 
@@ -614,22 +653,24 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
                 var passwordTag = currentTags.FirstOrDefault(ct => ct.Key.ToUpper() == TagNames.CERT_SECRET_PASSWORD_NAME.ToUpper());
                 var passwordSecretName = string.Empty;
 
-                if (passwordTag != null) {
+                if (passwordTag != null)
+                {
                     passwordSecretName = passwordTag.Value;
                     _logger.LogTrace($"got the password secret name {passwordSecretName} from the tag {TagNames.CERT_SECRET_PASSWORD_NAME}");
                 }
-                
+
                 _logger.LogTrace($"submitting request to delete secret..");
 
                 resp = await _secretsManagerClient.DeleteSecretAsync(req);
                 certSecretArn = resp.ARN;
                 _logger.LogTrace($"successfully removed secret with ARN {certSecretArn}");
 
-                if (!string.IsNullOrEmpty(passwordSecretName)) {
+                if (!string.IsNullOrEmpty(passwordSecretName))
+                {
                     var delPwdReq = new DeleteSecretRequest { SecretId = passwordSecretName };
                     _logger.LogTrace($"now removing the secret named {passwordSecretName}, the password for the cert.");
                     var removePwdResp = await _secretsManagerClient.DeleteSecretAsync(delPwdReq);
-                    
+
                     pwdSecretArn = removePwdResp.ARN;
 
                     _logger.LogTrace($"successfully removed the secret with ARN: {pwdSecretArn}");
@@ -677,7 +718,7 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
                 var newTagKeys = newTags.Select(t => t.Key).ToList();
 
                 var toReplace = currentTags.Where(t => newTagKeys.Any(key => key == t.Key)).Select(t => t.Key).ToList();
-                
+
                 if (toReplace.Any())
                 {
                     var untagRequest = new UntagResourceRequest
@@ -919,16 +960,15 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
         /// if neither are successful, we log and return null.
         /// </summary>
         /// <param name="secret"></param>
-        /// <returns></returns>
-        /// <exception cref="NotImplementedException"></exception>
-        internal async Task<string> GetPassword(SecretValueEntry secret)
+        /// <returns>The value in the secret string from the secret name in the value for the "PasswordSecret" tag on the secret.</returns>
+        internal async Task<string> GetPassword(AWSSecret secret)
         {
             _logger.MethodEntry();
 
             try
             {
                 // first, retrieve the tags..
-                var tags = await GetSecretTags(secret.Name);
+                var tags = secret.Tags;
 
                 // now check for the tag that should contain the name of the secret containing the password..
                 if (tags != null && tags.Any(t => t.Key.ToLower() == TagNames.CERT_SECRET_PASSWORD_NAME.ToLower()))
