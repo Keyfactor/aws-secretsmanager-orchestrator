@@ -51,8 +51,26 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
 
                 // now get the secrets
 
-                var secrets = _secretsManagerClient.ListSecrets(filters).Result;
-                                
+                var secrets = _secretsManagerClient.GetSecrets(filters).Result;
+
+                // trace out the contents for debugging.
+                _logger.LogTrace($"got the {secrets.Count} secrets..");
+
+                foreach (var secret in secrets)
+                {
+                    _logger.LogTrace($@"
+                        name: {secret.Name}
+                        secret string: {secret.SecretString}
+                        secret binary length: {secret.SecretBinary?.Length}
+                        tags: {secret.Tags.Count}");
+
+                    foreach (var tag in secret.Tags)
+                    {
+                        _logger.LogTrace($"{tag.Key}:{tag.Value}");
+                    }
+                }
+
+
                 // finally, we convert each to an inventoryItem according to the store type
 
                 switch (JobParameters.StoreType)
@@ -70,11 +88,11 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
                         throw new ArgumentException($"Invalid store type {JobParameters.StoreType}");
                 }
 
-                var warningCount = warnings.Count;
+                var warningCount = warnings?.Count;
 
 
                 var succeeded = true;
-                var resultMessage = $"Successfully processed {inventoryItems.Count} certificates. ";
+                var resultMessage = $"Successfully processed {inventoryItems.Count} certificates.";
                 JobResult result = SuccessJobResult(resultMessage);
 
                 // if there was a mix of errors and successful retrieval..
@@ -176,8 +194,8 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
             var warnings = new List<string>();
 
             // for JKS cert secrets, a tag containing the password secret name is required.  Filter out any that do not have this.
-
-            var certSecrets = secrets.Where(s => s.SecretBinary != null && s.Tags.Any(t => t.Key.ToUpper() == TagNames.CERT_SECRET_PASSWORD_NAME))?.ToList();
+            
+            var certSecrets = secrets.Where(s => s.SecretBinary != null && s.Tags.Any(t => t.Key?.ToUpper() == TagNames.CERT_SECRET_PASSWORD_NAME.ToUpper()))?.ToList();
 
             if (certSecrets == null || certSecrets.Count < 1)
             {
@@ -284,11 +302,12 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
 
             // for PFX cert secrets, a tag containing the password secret name is required.  Filter out any that do not have this.
 
-            var certSecrets = secrets.Where(s => s.SecretBinary != null && s.Tags.Any(t => t.Key.ToUpper() == TagNames.CERT_SECRET_PASSWORD_NAME))?.ToList();
+            var certSecrets = secrets.Where(s => s.SecretBinary != null && s.Tags.Any(t => t.Key?.ToUpper() == TagNames.CERT_SECRET_PASSWORD_NAME.ToUpper()))?.ToList();
 
-            if (certSecrets == null || certSecrets.Count < 1) {
+            if (certSecrets == null || certSecrets.Count < 1)
+            {
                 _logger.LogWarning($"none of the {secrets.Count} secrets contained both the required Tag named '{TagNames.CERT_SECRET_PASSWORD_NAME}' and a binary secret value.");
-                return (inventory, null); 
+                return (inventory, warnings);
             }
 
             _logger.LogTrace($"{secrets.Count - certSecrets.Count} secrets did not have the Tag '{TagNames.CERT_SECRET_PASSWORD_NAME}' or were missing a binary secert value and will be skipped.");
@@ -300,15 +319,15 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
                 try
                 {
                     var pfxPassword = await _secretsManagerClient.GetPassword(secret);
-                    
+
                     if (pfxPassword == null)
                     {
-                        var passwordSecretName = secret.Tags.First(t => t.Key.ToUpper() == TagNames.CERT_SECRET_PASSWORD_NAME.ToUpper())?.Value;
+                        var passwordSecretName = secret.Tags?.First(t => t.Key.ToUpper() == TagNames.CERT_SECRET_PASSWORD_NAME.ToUpper())?.Value;
                         warnings.Add($"Unable to retrieve the password from the secret named {passwordSecretName} containing the cert store password for {secret.Name}");
                         continue;
                     }
                     // now that we have the password, use it to extract the public certificates
-                                        
+
                     // Load the PFX file
                     var pfx = new X509Certificate2(secret.SecretBinary, pfxPassword, X509KeyStorageFlags.EphemeralKeySet);
 

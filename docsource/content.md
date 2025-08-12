@@ -60,4 +60,3 @@ To include only include the first two: <b>[prefix="org-name/dev-env/"]</b> in th
 Additionally, the certificate store in Command can be configured to filter the secrets to be managed by the presence of a specific Tag Name and optional Tag value.
 
 Additional details of how to configure these in Keyfactor Command can be found in the documentation for that store type ([AWSSMPEM](./awssmpem.md), [AWSSMPFX](./awssmpfx.md), [AWSSMJKS](./awssmpfx.md)).
-

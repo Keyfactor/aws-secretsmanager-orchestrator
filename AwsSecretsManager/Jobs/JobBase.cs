@@ -304,7 +304,7 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
                 {
                     var key = keyPart.Substring(0, keyPart.Length - 1);
                     var value = parts[i + 1];
-                    attributes[key] = value;
+                    attributes[key.ToUpper()] = value;
                 }
             }
 
@@ -318,14 +318,14 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
 
 
             // Validate combinations
-            if (attributes.ContainsKey("prefix"))
-                prefix = attributes["prefix"];
+            if (attributes.ContainsKey("PREFIX"))
+                prefix = attributes["PREFIX"];
 
-            if (attributes.ContainsKey("tagName"))
-                tagName = attributes["tagName"];
+            if (attributes.ContainsKey("TAGNAME"))
+                tagName = attributes["TAGNAME"];
 
-            if (attributes.ContainsKey("tagValue"))
-                tagValue = attributes["tagValue"];
+            if (attributes.ContainsKey("TAGVALUE"))
+                tagValue = attributes["TAGVALUE"];
 
             return (cleanPath, prefix, tagName, tagValue);
         }

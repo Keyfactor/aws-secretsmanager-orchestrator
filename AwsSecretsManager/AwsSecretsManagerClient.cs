@@ -63,7 +63,7 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
         /// Lists all secrets that contain the provided Tag Key value.  
         /// We retreive these in batches of maximum 20 size and loop until we've gotten them all.
         /// </summary>
-        public async Task<List<AWSSecret>> ListSecrets(List<Filter> filters)
+        public async Task<List<AWSSecret>> GetSecrets(List<Filter> filters)
         {
             _logger.MethodEntry();
             var results = new List<AWSSecret>();
@@ -111,9 +111,7 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
                         SecretIdList = secretNames
                     };
 
-                    var response = await _secretsManagerClient.BatchGetSecretValueAsync(request);
-
-                    // now we will filter out entries that do not have a binary secret for AWSSMPFX, and AWSSMJKS
+                    var response = await _secretsManagerClient.BatchGetSecretValueAsync(request);                    
 
                     var secrets = response.SecretValues;
 
@@ -137,11 +135,14 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
             // now we need to retreive the associated tags for each secret
             try
             {
-
+                _logger.LogTrace($"retreiving the tag values for the {secretContents.Count} secrets..");
                 foreach (var secret in secretContents)
                 {
                     secretName = secret.Name;
                     var tags = await GetSecretTags(secretName);
+                    _logger.LogTrace($"got tags for {secretName}: ");
+                    tags.ForEach(t => _logger.LogTrace($"{t.Key} : {t.Value}"));
+
                     var awsSecret = new AWSSecret
                     {
                         Name = secretName,
@@ -942,7 +943,7 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
             try
             {
                 var res = await _secretsManagerClient.DescribeSecretAsync(req);
-                return res.Tags;
+                return res.Tags ?? new List<Tag>();
             }
             catch (Exception ex)
             {
