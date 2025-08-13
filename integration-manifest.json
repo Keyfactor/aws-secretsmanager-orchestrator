@@ -372,9 +372,9 @@
           "CustomAliasAllowed": "Required"
         },
         {
-          "Name": "AwsSecretsManager PFX",
-          "ShortName": "AWSSMPFX",
-          "Capability": "AWSSMPFX",
+          "Name": "AwsSecretsManager JKS",
+          "ShortName": "AWSSMJKS",
+          "Capability": "AWSSMJKS",
           "LocalStore": false,
           "SupportedOperations": {
             "Add": true,
