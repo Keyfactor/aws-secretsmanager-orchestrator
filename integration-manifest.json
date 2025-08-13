@@ -157,7 +157,7 @@
             {
               "Name": "ReplicaRegions",
               "DisplayName": "Replica Regions",
-              "Description": "To have the certificate replicated to other regions, you can provide them here as a JSON array in the format: [{ 'KmsKeyId': '<optionally specify the encryption key ID', 'Region': '<region name>'}, {...}]",
+              "Description": "To replicate secrets to other regions, you can provide them here as a JSON array in the format: [{ 'KmsKeyId': '<optionally specify the encryption key ID', 'Region': '<region name>'}, {...}]",
               "Type": "string",
               "RequiredWhen": {
                 "HasPrivateKey": false,
