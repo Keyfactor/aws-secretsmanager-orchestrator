@@ -4,7 +4,7 @@
   "integration_type": "orchestrator",
   "link_github": false,
   "name": "Integration Template",
-  "release_dir": "AwsSecretsManagerOrchestrator/bin/Release",
+  "release_dir": "AwsSecretsManager/bin/Release",
   "release_project": "AwsSecretsManager/AwsSecretsManager.csproj",
   "status": "prototype",
   "support_level": "community",
