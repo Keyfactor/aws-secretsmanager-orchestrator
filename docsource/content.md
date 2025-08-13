@@ -10,7 +10,7 @@ It can read and write secrets containing certificates stored in the following fo
 - PFX
 - JKS
 
-For each format there is a corresponding certificate store type ([AWSSMPEM](./awssmpem.md), [AWSSMPFX](./awssmpfx.md), [AWSSMJKS](./awssmpfx.md)).
+For each format there is a corresponding certificate store type ([AWSSMPEM](#AWSSMPEM), [AWSSMPFX](#AWSSMPFX), [AWSSMJKS](#AWSSMJKS)).
 
 ## Requirements
 In order to use this integration, you should have..
