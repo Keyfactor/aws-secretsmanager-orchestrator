@@ -57,6 +57,7 @@ The AWS Secrets Manager Universal Orchestrator extension implements 3 Certificat
 This integration is compatible with Keyfactor Universal Orchestrator version 10.1 and later.
 
 ## Support
+
 The AWS Secrets Manager Universal Orchestrator extension is community open source and there is **no SLA**. Keyfactor will address issues as resources become available.
 
 > To report a problem or suggest a new feature, use the **[Issues](../../issues)** tab. If you want to contribute bug fixes or additional enhancements, use the **[Pull requests](../../pulls)** tab.
@@ -64,7 +65,6 @@ The AWS Secrets Manager Universal Orchestrator extension is community open sourc
 ## Requirements & Prerequisites
 
 Before installing the AWS Secrets Manager Universal Orchestrator extension, we recommend that you install [kfutil](https://github.com/Keyfactor/kfutil). Kfutil is a command-line tool that simplifies the process of creating store types, installing extensions, and instantiating certificate stores in Keyfactor Command.
-
 
 In order to use this integration, you should have..
 - An instance of Keyfactor Command v11.0+
@@ -130,9 +130,8 @@ The AWSSMPEM certificate store type provided by this integration is the one to u
 Certificates managed by this certificate store are expected to have the PEM formatted certificate stored as a SecretString in AWS Secrets Manager.
 
 
-
-
 #### AwsSecretsManager PEM Requirements
+
 
 1. [Certificate Format](#certificate-format)
 1. [Configuring the Certificate Store](#configuring-the-certificate-store)
@@ -171,8 +170,6 @@ In summary: supplying a name prefix or tag name and value as part of a certifica
  - Inventory Jobs will only return certificates where the name begins with the prefix, and/or the tagName exists on the secret and contains the provided tagValue.
  - Enrollment into these stores will apply the same convention to newly added certificate secrets; appending the prefix to the name and/or associating the tag name and value.
 
-
-
 #### Supported Operations
 
 | Operation    | Is Supported                                                                                                           |
@@ -188,12 +185,14 @@ In summary: supplying a name prefix or tag name and value as part of a certifica
 ##### Using kfutil:
 `kfutil` is a custom CLI for the Keyfactor Command API and can be used to create certificate store types.
 For more information on [kfutil](https://github.com/Keyfactor/kfutil) check out the [docs](https://github.com/Keyfactor/kfutil?tab=readme-ov-file#quickstart)
+
    <details><summary>Click to expand AWSSMPEM kfutil details</summary>
 
    ##### Using online definition from GitHub:
    This will reach out to GitHub and pull the latest store-type definition
    ```shell
    # AwsSecretsManager PEM
+
    kfutil store-types create AWSSMPEM
    ```
 
@@ -635,8 +634,8 @@ the Keyfactor Command Portal
 
    The Basic tab should look like this:
 
-   ![AWSSMJKS Basic Tab](docsource/images/AWSSMJKS-basic-store-type-dialog.png)
 
+   ![AWSSMJKS Basic Tab](docsource/images/AWSSMJKS-basic-store-type-dialog.png)
    ##### Advanced Tab
    | Attribute | Value | Description |
    | --------- | ----- | ----- |
@@ -670,7 +669,9 @@ the Keyfactor Command Portal
 
    The Custom Fields tab should look like this:
 
+
    ![AWSSMJKS Custom Fields Tab](docsource/images/AWSSMJKS-custom-fields-store-type-dialog.png)
+
 
    ##### Entry Parameters Tab
 
@@ -710,6 +711,7 @@ the Keyfactor Command Portal
     * **Default on Windows** - `C:\Program Files\Keyfactor\Keyfactor Orchestrator\extensions`
     * **Default on Linux** - `/opt/keyfactor/orchestrator/extensions`
 
+
 3. **Create a new directory for the AWS Secrets Manager Universal Orchestrator extension inside the extensions directory.**
 
     Create a new directory called `aws-secretsmanager-orchestrator`.
@@ -724,6 +726,7 @@ the Keyfactor Command Portal
 
 6. **(optional) PAM Integration**
 
+
     The AWS Secrets Manager Universal Orchestrator extension is compatible with all supported Keyfactor PAM extensions to resolve PAM-eligible secrets. PAM extensions running on Universal Orchestrators enable secure retrieval of secrets from a connected PAM provider.
 
     To configure a PAM provider, [reference the Keyfactor Integration Catalog](https://keyfactor.github.io/integrations-catalog/content/pam) to select an extension and follow the associated instructions to install it on the Universal Orchestrator (remote).
@@ -735,10 +738,10 @@ the Keyfactor Command Portal
 
 ## Defining Certificate Stores
 
+
 The AWS Secrets Manager Universal Orchestrator extension implements 3 Certificate Store Types, each of which implements different functionality. Refer to the individual instructions below for each Certificate Store Type that you deemed necessary for your use case from the installation section.
 
 <details><summary>AwsSecretsManager PEM (AWSSMPEM)</summary>
-
 
 ### Store Creation
 
@@ -1054,8 +1057,6 @@ Please refer to the **Universal Orchestrator (remote)** usage section ([PAM prov
 
 
 </details>
-
-
 
 
 ## License
