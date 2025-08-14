@@ -4,7 +4,7 @@ The AWSSMJKS certificate store type allows managing certificates stored in AWS S
 Since AWS Secrets Manager is designed to store arbitrary secrets of any type, it is necessary that we implement a convention for identifying and writing these certificates as 
 AWS Secrets Manager secrets.
 
-### Requirements
+## Requirements
 
 1. [Certificate Format](#certificate-format)
 1. [Certificate Store Filtering](#defining-certificate-store-inclusion-criteria)
