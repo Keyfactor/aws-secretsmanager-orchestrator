@@ -1,5 +1,5 @@
 <h1 align="center" style="border-bottom: none">
-    AWS Secrets Manager   Integration Universal Orchestrator Extension
+    AWS Secrets Manager Universal Orchestrator Extension
 </h1>
 
 <p align="center">
@@ -43,7 +43,7 @@ It can read and write secrets containing certificates stored in the following fo
 
 For each format there is a corresponding certificate store type ([AWSSMPEM](#AWSSMPEM), [AWSSMPFX](#AWSSMPFX), [AWSSMJKS](#AWSSMJKS)).
 
-The AWS Secrets Manager   Integration Universal Orchestrator extension implements 3 Certificate Store Types. Depending on your use case, you may elect to use one, or all of these Certificate Store Types. Descriptions of each are provided below.
+The AWS Secrets Manager Universal Orchestrator extension implements 3 Certificate Store Types. Depending on your use case, you may elect to use one, or all of these Certificate Store Types. Descriptions of each are provided below.
 
 - [AwsSecretsManager PEM](#AWSSMPEM)
 
@@ -57,13 +57,13 @@ The AWS Secrets Manager   Integration Universal Orchestrator extension implement
 This integration is compatible with Keyfactor Universal Orchestrator version 10.1 and later.
 
 ## Support
-The AWS Secrets Manager   Integration Universal Orchestrator extension is community open source and there is **no SLA**. Keyfactor will address issues as resources become available.
+The AWS Secrets Manager Universal Orchestrator extension is community open source and there is **no SLA**. Keyfactor will address issues as resources become available.
 
 > To report a problem or suggest a new feature, use the **[Issues](../../issues)** tab. If you want to contribute bug fixes or additional enhancements, use the **[Pull requests](../../pulls)** tab.
 
 ## Requirements & Prerequisites
 
-Before installing the AWS Secrets Manager   Integration Universal Orchestrator extension, we recommend that you install [kfutil](https://github.com/Keyfactor/kfutil). Kfutil is a command-line tool that simplifies the process of creating store types, installing extensions, and instantiating certificate stores in Keyfactor Command.
+Before installing the AWS Secrets Manager Universal Orchestrator extension, we recommend that you install [kfutil](https://github.com/Keyfactor/kfutil). Kfutil is a command-line tool that simplifies the process of creating store types, installing extensions, and instantiating certificate stores in Keyfactor Command.
 
 
 In order to use this integration, you should have..
@@ -117,9 +117,9 @@ Additional details of how to configure these in Keyfactor Command can be found i
 
 ## Certificate Store Types
 
-To use the AWS Secrets Manager   Integration Universal Orchestrator extension, you **must** create the Certificate Store Types required for your use-case. This only needs to happen _once_ per Keyfactor Command instance.
+To use the AWS Secrets Manager Universal Orchestrator extension, you **must** create the Certificate Store Types required for your use-case. This only needs to happen _once_ per Keyfactor Command instance.
 
-The AWS Secrets Manager   Integration Universal Orchestrator extension implements 3 Certificate Store Types. Depending on your use case, you may elect to use one, or all of these Certificate Store Types.
+The AWS Secrets Manager Universal Orchestrator extension implements 3 Certificate Store Types. Depending on your use case, you may elect to use one, or all of these Certificate Store Types.
 
 ### AWSSMPEM
 
@@ -325,7 +325,7 @@ Here are a few examples of Store Path values with explanations:
 | :--------------- | :----------------- | :------ |
 | us-east-2        | no filter          | all secrets that the authenticating identity has access to will be considered |
 | us-east-2 [TagName="PFXcert"]  | TagName = "PFXcert" | all secrets that include the tag named "PFXcert".  The tag value is not considered |
-| us-east-2 [TagName="PFXcert" TagValue="Keyactor"] | TagName = "PFXcert" AND TagValue="Keyfactor" | all secrets that contain the tag named "PFXcert" and the tag value "Keyfactor" |
+| us-east-2 [TagName="PFXcert" TagValue="Keyfactor"] | TagName = "PFXcert" AND TagValue="Keyfactor" | all secrets that contain the tag named "PFXcert" and the tag value "Keyfactor" |
 | us-east-2 [TagValue="KFcerts"] | INVALID | TagName required when setting TagValue | 
 | us-east-2 [Prefix="ssl/prod/"] | secrets named "ssl/prod/*" | all secrets with a name beginning with "ssl/prod/" (logical heirarchy) |
 | us-east-2 [Prefix="ssl/" TagName="PFXcert" TagValue="prod"] | secrets named "ssl/**" that have the tag named "PFXcert" with a tag value of "prod" | combined name and tag filters |
@@ -526,7 +526,7 @@ Here are a few examples of Store Path values with explanations:
 | :--------------- | :----------------- | :------ |
 | us-east-2        | no filter          | all secrets that the authenticating identity has access to will be considered |
 | us-east-2 [TagName="JKScert"]  | TagName = "JKScert" | all secrets that include the tag named "JKScert".  The tag value is not considered |
-| us-east-2 [TagName="JKScert" TagValue="Keyactor"] | TagName = "JKScert" AND TagValue="Keyfactor" | all secrets that contain the tag named "JKScert" and the tag value "Keyfactor" |
+| us-east-2 [TagName="JKScert" TagValue="Keyfactor"] | TagName = "JKScert" AND TagValue="Keyfactor" | all secrets that contain the tag named "JKScert" and the tag value "Keyfactor" |
 | us-east-2 [TagValue="KFcerts"] | INVALID | TagName required when setting TagValue | 
 | us-east-2 [Prefix="ssl/prod/"] | secrets named "ssl/prod/*" | all secrets with a name beginning with "ssl/prod/" (logical heirarchy) |
 | us-east-2 [Prefix="ssl/" TagName="JKScert" TagValue="prod"] | secrets named "ssl/**" that have the tag named "JKScert" with a tag value of "prod" | combined name and tag filters |
@@ -689,9 +689,9 @@ the Keyfactor Command Portal
 
 ## Installation
 
-1. **Download the latest AWS Secrets Manager   Integration Universal Orchestrator extension from GitHub.**
+1. **Download the latest AWS Secrets Manager Universal Orchestrator extension from GitHub.**
 
-    Navigate to the [AWS Secrets Manager   Integration Universal Orchestrator extension GitHub version page](https://github.com/Keyfactor/aws-secretsmanager-orchestrator/releases/latest). Refer to the compatibility matrix below to determine whether the `net6.0` or `net8.0` asset should be downloaded. Then, click the corresponding asset to download the zip archive.
+    Navigate to the [AWS Secrets Manager Universal Orchestrator extension GitHub version page](https://github.com/Keyfactor/aws-secretsmanager-orchestrator/releases/latest). Refer to the compatibility matrix below to determine whether the `net6.0` or `net8.0` asset should be downloaded. Then, click the corresponding asset to download the zip archive.
 
    | Universal Orchestrator Version | Latest .NET version installed on the Universal Orchestrator server | `rollForward` condition in `Orchestrator.runtimeconfig.json` | `aws-secretsmanager-orchestrator` .NET version to download |
    | --------- | ----------- | ----------- | ----------- |
@@ -710,7 +710,7 @@ the Keyfactor Command Portal
     * **Default on Windows** - `C:\Program Files\Keyfactor\Keyfactor Orchestrator\extensions`
     * **Default on Linux** - `/opt/keyfactor/orchestrator/extensions`
 
-3. **Create a new directory for the AWS Secrets Manager   Integration Universal Orchestrator extension inside the extensions directory.**
+3. **Create a new directory for the AWS Secrets Manager Universal Orchestrator extension inside the extensions directory.**
 
     Create a new directory called `aws-secretsmanager-orchestrator`.
     > The directory name does not need to match any names used elsewhere; it just has to be unique within the extensions directory.
@@ -724,7 +724,7 @@ the Keyfactor Command Portal
 
 6. **(optional) PAM Integration**
 
-    The AWS Secrets Manager   Integration Universal Orchestrator extension is compatible with all supported Keyfactor PAM extensions to resolve PAM-eligible secrets. PAM extensions running on Universal Orchestrators enable secure retrieval of secrets from a connected PAM provider.
+    The AWS Secrets Manager Universal Orchestrator extension is compatible with all supported Keyfactor PAM extensions to resolve PAM-eligible secrets. PAM extensions running on Universal Orchestrators enable secure retrieval of secrets from a connected PAM provider.
 
     To configure a PAM provider, [reference the Keyfactor Integration Catalog](https://keyfactor.github.io/integrations-catalog/content/pam) to select an extension and follow the associated instructions to install it on the Universal Orchestrator (remote).
 
@@ -735,7 +735,7 @@ the Keyfactor Command Portal
 
 ## Defining Certificate Stores
 
-The AWS Secrets Manager   Integration Universal Orchestrator extension implements 3 Certificate Store Types, each of which implements different functionality. Refer to the individual instructions below for each Certificate Store Type that you deemed necessary for your use case from the installation section.
+The AWS Secrets Manager Universal Orchestrator extension implements 3 Certificate Store Types, each of which implements different functionality. Refer to the individual instructions below for each Certificate Store Type that you deemed necessary for your use case from the installation section.
 
 <details><summary>AwsSecretsManager PEM (AWSSMPEM)</summary>
 
