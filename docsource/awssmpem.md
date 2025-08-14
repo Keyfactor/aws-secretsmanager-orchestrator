@@ -3,7 +3,7 @@
 The AWSSMPEM certificate store type provided by this integration is the one to use for managing certificates stored in AWS Secrets Manager in the PEM format.
 Certificates managed by this certificate store are expected to have the PEM formatted certificate stored as a SecretString in AWS Secrets Manager.
 
-### Requirements
+## Requirements
 
 1. [Certificate Format](#certificate-format)
 1. [Configuring the Certificate Store](#configuring-the-certificate-store)
