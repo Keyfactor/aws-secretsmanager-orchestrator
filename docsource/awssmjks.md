@@ -34,7 +34,7 @@ Here are a few examples of Store Path values with explanations:
 | :--------------- | :----------------- | :------ |
 | us-east-2        | no filter          | all secrets that the authenticating identity has access to will be considered |
 | us-east-2 [TagName="JKScert"]  | TagName = "JKScert" | all secrets that include the tag named "JKScert".  The tag value is not considered |
-| us-east-2 [TagName="JKScert" TagValue="Keyactor"] | TagName = "JKScert" AND TagValue="Keyfactor" | all secrets that contain the tag named "JKScert" and the tag value "Keyfactor" |
+| us-east-2 [TagName="JKScert" TagValue="Keyfactor"] | TagName = "JKScert" AND TagValue="Keyfactor" | all secrets that contain the tag named "JKScert" and the tag value "Keyfactor" |
 | us-east-2 [TagValue="KFcerts"] | INVALID | TagName required when setting TagValue | 
 | us-east-2 [Prefix="ssl/prod/"] | secrets named "ssl/prod/*" | all secrets with a name beginning with "ssl/prod/" (logical heirarchy) |
 | us-east-2 [Prefix="ssl/" TagName="JKScert" TagValue="prod"] | secrets named "ssl/**" that have the tag named "JKScert" with a tag value of "prod" | combined name and tag filters |
