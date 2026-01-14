@@ -4,7 +4,7 @@ The AWSSMPFX certificate store type allows managing certificates stored in AWS S
 Since AWS Secrets Manager is designed to store arbitrary secrets of any type, it is necessary that we implement a convention for identifying and writing these certificates as 
 AWS Secrets Manager secrets.
 
-### Requirements
+## Requirements
 
 1. [Certificate Format](#certificate-format)
 1. [Certificate Store Filtering](#defining-certificate-store-inclusion-criteria)
@@ -34,7 +34,7 @@ Here are a few examples of Store Path values with explanations:
 | :--------------- | :----------------- | :------ |
 | us-east-2        | no filter          | all secrets that the authenticating identity has access to will be considered |
 | us-east-2 [TagName="PFXcert"]  | TagName = "PFXcert" | all secrets that include the tag named "PFXcert".  The tag value is not considered |
-| us-east-2 [TagName="PFXcert" TagValue="Keyactor"] | TagName = "PFXcert" AND TagValue="Keyfactor" | all secrets that contain the tag named "PFXcert" and the tag value "Keyfactor" |
+| us-east-2 [TagName="PFXcert" TagValue="Keyfactor"] | TagName = "PFXcert" AND TagValue="Keyfactor" | all secrets that contain the tag named "PFXcert" and the tag value "Keyfactor" |
 | us-east-2 [TagValue="KFcerts"] | INVALID | TagName required when setting TagValue | 
 | us-east-2 [Prefix="ssl/prod/"] | secrets named "ssl/prod/*" | all secrets with a name beginning with "ssl/prod/" (logical heirarchy) |
 | us-east-2 [Prefix="ssl/" TagName="PFXcert" TagValue="prod"] | secrets named "ssl/**" that have the tag named "PFXcert" with a tag value of "prod" | combined name and tag filters |
