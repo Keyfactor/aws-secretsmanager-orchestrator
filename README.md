@@ -275,6 +275,7 @@ the Keyfactor Command Portal
    A switch to enable the store to use Default SDK credentials
 
    ![AWSSMPEM Custom Field - UseDefaultSdkAuth](docsource/images/AWSSMPEM-custom-field-UseDefaultSdkAuth-dialog.png)
+   ![AWSSMPEM Custom Field - UseDefaultSdkAuth](docsource/images/AWSSMPEM-custom-field-UseDefaultSdkAuth-validation-options-dialog.png)
 
 
 
@@ -282,6 +283,7 @@ the Keyfactor Command Portal
    A switch to enable the store to assume a new Role when using Default SDK credentials
 
    ![AWSSMPEM Custom Field - DefaultSdkAssumeRole](docsource/images/AWSSMPEM-custom-field-DefaultSdkAssumeRole-dialog.png)
+   ![AWSSMPEM Custom Field - DefaultSdkAssumeRole](docsource/images/AWSSMPEM-custom-field-DefaultSdkAssumeRole-validation-options-dialog.png)
 
 
 
@@ -289,6 +291,7 @@ the Keyfactor Command Portal
    A switch to enable the store to use an OAuth provider workflow to authenticate with AWS
 
    ![AWSSMPEM Custom Field - UseOAuth](docsource/images/AWSSMPEM-custom-field-UseOAuth-dialog.png)
+   ![AWSSMPEM Custom Field - UseOAuth](docsource/images/AWSSMPEM-custom-field-UseOAuth-validation-options-dialog.png)
 
 
 
@@ -296,6 +299,7 @@ the Keyfactor Command Portal
    This is the OAuth Scope needed for Okta OAuth, defined in Okta
 
    ![AWSSMPEM Custom Field - OAuthScope](docsource/images/AWSSMPEM-custom-field-OAuthScope-dialog.png)
+   ![AWSSMPEM Custom Field - OAuthScope](docsource/images/AWSSMPEM-custom-field-OAuthScope-validation-options-dialog.png)
 
 
 
@@ -303,6 +307,7 @@ the Keyfactor Command Portal
    In OAuth 2.0, the term 'grant type' refers to the way an application gets an access token. In Okta this is `client_credentials`
 
    ![AWSSMPEM Custom Field - OAuthGrantType](docsource/images/AWSSMPEM-custom-field-OAuthGrantType-dialog.png)
+   ![AWSSMPEM Custom Field - OAuthGrantType](docsource/images/AWSSMPEM-custom-field-OAuthGrantType-validation-options-dialog.png)
 
 
 
@@ -310,6 +315,7 @@ the Keyfactor Command Portal
    The token endpoint for the OAuth 2.0 provider
 
    ![AWSSMPEM Custom Field - OAuthUrl](docsource/images/AWSSMPEM-custom-field-OAuthUrl-dialog.png)
+   ![AWSSMPEM Custom Field - OAuthUrl](docsource/images/AWSSMPEM-custom-field-OAuthUrl-validation-options-dialog.png)
 
 
 
@@ -317,6 +323,7 @@ the Keyfactor Command Portal
    The Client ID for OAuth.
 
    ![AWSSMPEM Custom Field - OAuthClientId](docsource/images/AWSSMPEM-custom-field-OAuthClientId-dialog.png)
+   ![AWSSMPEM Custom Field - OAuthClientId](docsource/images/AWSSMPEM-custom-field-OAuthClientId-validation-options-dialog.png)
 
 
 
@@ -324,6 +331,7 @@ the Keyfactor Command Portal
    The Client Secret for OAuth.
 
    ![AWSSMPEM Custom Field - OAuthClientSecret](docsource/images/AWSSMPEM-custom-field-OAuthClientSecret-dialog.png)
+   ![AWSSMPEM Custom Field - OAuthClientSecret](docsource/images/AWSSMPEM-custom-field-OAuthClientSecret-validation-options-dialog.png)
 
 
 
@@ -331,6 +339,7 @@ the Keyfactor Command Portal
    A switch to enable the store to use IAM User auth to assume a role when authenticating with AWS
 
    ![AWSSMPEM Custom Field - UseIAM](docsource/images/AWSSMPEM-custom-field-UseIAM-dialog.png)
+   ![AWSSMPEM Custom Field - UseIAM](docsource/images/AWSSMPEM-custom-field-UseIAM-validation-options-dialog.png)
 
 
 
@@ -338,6 +347,7 @@ the Keyfactor Command Portal
    The AWS Access Key for an IAM User
 
    ![AWSSMPEM Custom Field - IAMUserAccessKey](docsource/images/AWSSMPEM-custom-field-IAMUserAccessKey-dialog.png)
+   ![AWSSMPEM Custom Field - IAMUserAccessKey](docsource/images/AWSSMPEM-custom-field-IAMUserAccessKey-validation-options-dialog.png)
 
 
 
@@ -345,6 +355,7 @@ the Keyfactor Command Portal
    The AWS Access Secret for an IAM User.
 
    ![AWSSMPEM Custom Field - IAMUserAccessSecret](docsource/images/AWSSMPEM-custom-field-IAMUserAccessSecret-dialog.png)
+   ![AWSSMPEM Custom Field - IAMUserAccessSecret](docsource/images/AWSSMPEM-custom-field-IAMUserAccessSecret-validation-options-dialog.png)
 
 
 
@@ -352,6 +363,7 @@ the Keyfactor Command Portal
    An optional parameter sts:ExternalId to pass with Assume Role calls
 
    ![AWSSMPEM Custom Field - ExternalId](docsource/images/AWSSMPEM-custom-field-ExternalId-dialog.png)
+   ![AWSSMPEM Custom Field - ExternalId](docsource/images/AWSSMPEM-custom-field-ExternalId-validation-options-dialog.png)
 
 
 
@@ -373,12 +385,14 @@ the Keyfactor Command Portal
    If desired, tags can be applied to the certificate entries in AWS Secrets Manager.  Provide them as a JSON string of key-value pairs ie: '{'tag-name': 'tag-content', 'other-tag-name': 'other-tag-content'}'
 
    ![AWSSMPEM Entry Parameter - CertificateTags](docsource/images/AWSSMPEM-entry-parameters-store-type-dialog-CertificateTags.png)
+   ![AWSSMPEM Entry Parameter - CertificateTags](docsource/images/AWSSMPEM-entry-parameters-store-type-dialog-CertificateTags-validation-options.png)
 
 
    ##### Replica Regions
    To replicate secrets to other regions, you can provide them here as a JSON array in the format: [{ 'KmsKeyId': '<optionally specify the encryption key ID', 'Region': '<region name>'}, {...}]
 
    ![AWSSMPEM Entry Parameter - ReplicaRegions](docsource/images/AWSSMPEM-entry-parameters-store-type-dialog-ReplicaRegions.png)
+   ![AWSSMPEM Entry Parameter - ReplicaRegions](docsource/images/AWSSMPEM-entry-parameters-store-type-dialog-ReplicaRegions-validation-options.png)
 
 
 
@@ -577,6 +591,7 @@ the Keyfactor Command Portal
    A switch to enable the store to use Default SDK credentials
 
    ![AWSSMPFX Custom Field - UseDefaultSdkAuth](docsource/images/AWSSMPFX-custom-field-UseDefaultSdkAuth-dialog.png)
+   ![AWSSMPFX Custom Field - UseDefaultSdkAuth](docsource/images/AWSSMPFX-custom-field-UseDefaultSdkAuth-validation-options-dialog.png)
 
 
 
@@ -584,6 +599,7 @@ the Keyfactor Command Portal
    A switch to enable the store to assume a new Role when using Default SDK credentials
 
    ![AWSSMPFX Custom Field - DefaultSdkAssumeRole](docsource/images/AWSSMPFX-custom-field-DefaultSdkAssumeRole-dialog.png)
+   ![AWSSMPFX Custom Field - DefaultSdkAssumeRole](docsource/images/AWSSMPFX-custom-field-DefaultSdkAssumeRole-validation-options-dialog.png)
 
 
 
@@ -591,6 +607,7 @@ the Keyfactor Command Portal
    A switch to enable the store to use an OAuth provider workflow to authenticate with AWS
 
    ![AWSSMPFX Custom Field - UseOAuth](docsource/images/AWSSMPFX-custom-field-UseOAuth-dialog.png)
+   ![AWSSMPFX Custom Field - UseOAuth](docsource/images/AWSSMPFX-custom-field-UseOAuth-validation-options-dialog.png)
 
 
 
@@ -598,6 +615,7 @@ the Keyfactor Command Portal
    This is the OAuth Scope needed for Okta OAuth, defined in Okta
 
    ![AWSSMPFX Custom Field - OAuthScope](docsource/images/AWSSMPFX-custom-field-OAuthScope-dialog.png)
+   ![AWSSMPFX Custom Field - OAuthScope](docsource/images/AWSSMPFX-custom-field-OAuthScope-validation-options-dialog.png)
 
 
 
@@ -605,6 +623,7 @@ the Keyfactor Command Portal
    In OAuth 2.0, the term 'grant type' refers to the way an application gets an access token. In Okta this is `client_credentials`
 
    ![AWSSMPFX Custom Field - OAuthGrantType](docsource/images/AWSSMPFX-custom-field-OAuthGrantType-dialog.png)
+   ![AWSSMPFX Custom Field - OAuthGrantType](docsource/images/AWSSMPFX-custom-field-OAuthGrantType-validation-options-dialog.png)
 
 
 
@@ -612,6 +631,7 @@ the Keyfactor Command Portal
    The token endpoint for the OAuth 2.0 provider
 
    ![AWSSMPFX Custom Field - OAuthUrl](docsource/images/AWSSMPFX-custom-field-OAuthUrl-dialog.png)
+   ![AWSSMPFX Custom Field - OAuthUrl](docsource/images/AWSSMPFX-custom-field-OAuthUrl-validation-options-dialog.png)
 
 
 
@@ -619,6 +639,7 @@ the Keyfactor Command Portal
    The Client ID for OAuth.
 
    ![AWSSMPFX Custom Field - OAuthClientId](docsource/images/AWSSMPFX-custom-field-OAuthClientId-dialog.png)
+   ![AWSSMPFX Custom Field - OAuthClientId](docsource/images/AWSSMPFX-custom-field-OAuthClientId-validation-options-dialog.png)
 
 
 
@@ -626,6 +647,7 @@ the Keyfactor Command Portal
    The Client Secret for OAuth.
 
    ![AWSSMPFX Custom Field - OAuthClientSecret](docsource/images/AWSSMPFX-custom-field-OAuthClientSecret-dialog.png)
+   ![AWSSMPFX Custom Field - OAuthClientSecret](docsource/images/AWSSMPFX-custom-field-OAuthClientSecret-validation-options-dialog.png)
 
 
 
@@ -633,6 +655,7 @@ the Keyfactor Command Portal
    A switch to enable the store to use IAM User auth to assume a role when authenticating with AWS
 
    ![AWSSMPFX Custom Field - UseIAM](docsource/images/AWSSMPFX-custom-field-UseIAM-dialog.png)
+   ![AWSSMPFX Custom Field - UseIAM](docsource/images/AWSSMPFX-custom-field-UseIAM-validation-options-dialog.png)
 
 
 
@@ -640,6 +663,7 @@ the Keyfactor Command Portal
    The AWS Access Key for an IAM User
 
    ![AWSSMPFX Custom Field - IAMUserAccessKey](docsource/images/AWSSMPFX-custom-field-IAMUserAccessKey-dialog.png)
+   ![AWSSMPFX Custom Field - IAMUserAccessKey](docsource/images/AWSSMPFX-custom-field-IAMUserAccessKey-validation-options-dialog.png)
 
 
 
@@ -647,6 +671,7 @@ the Keyfactor Command Portal
    The AWS Access Secret for an IAM User.
 
    ![AWSSMPFX Custom Field - IAMUserAccessSecret](docsource/images/AWSSMPFX-custom-field-IAMUserAccessSecret-dialog.png)
+   ![AWSSMPFX Custom Field - IAMUserAccessSecret](docsource/images/AWSSMPFX-custom-field-IAMUserAccessSecret-validation-options-dialog.png)
 
 
 
@@ -654,6 +679,7 @@ the Keyfactor Command Portal
    An optional parameter sts:ExternalId to pass with Assume Role calls
 
    ![AWSSMPFX Custom Field - ExternalId](docsource/images/AWSSMPFX-custom-field-ExternalId-dialog.png)
+   ![AWSSMPFX Custom Field - ExternalId](docsource/images/AWSSMPFX-custom-field-ExternalId-validation-options-dialog.png)
 
 
 
@@ -675,12 +701,14 @@ the Keyfactor Command Portal
    If desired, tags can be applied to the certificate entries in AWS Secrets Manager.  Provide them as a JSON string of key-value pairs ie: '{'tag-name': 'tag-content', 'other-tag-name': 'other-tag-content'}'
 
    ![AWSSMPFX Entry Parameter - CertificateTags](docsource/images/AWSSMPFX-entry-parameters-store-type-dialog-CertificateTags.png)
+   ![AWSSMPFX Entry Parameter - CertificateTags](docsource/images/AWSSMPFX-entry-parameters-store-type-dialog-CertificateTags-validation-options.png)
 
 
    ##### Replica Regions
    To replicate secrets to other regions, you can provide them here as a JSON array in the format: [{ 'KmsKeyId': '<optionally specify the encryption key ID', 'Region': '<region name>'}, {...}]
 
    ![AWSSMPFX Entry Parameter - ReplicaRegions](docsource/images/AWSSMPFX-entry-parameters-store-type-dialog-ReplicaRegions.png)
+   ![AWSSMPFX Entry Parameter - ReplicaRegions](docsource/images/AWSSMPFX-entry-parameters-store-type-dialog-ReplicaRegions-validation-options.png)
 
 
 
@@ -879,6 +907,7 @@ the Keyfactor Command Portal
    A switch to enable the store to use Default SDK credentials
 
    ![AWSSMJKS Custom Field - UseDefaultSdkAuth](docsource/images/AWSSMJKS-custom-field-UseDefaultSdkAuth-dialog.png)
+   ![AWSSMJKS Custom Field - UseDefaultSdkAuth](docsource/images/AWSSMJKS-custom-field-UseDefaultSdkAuth-validation-options-dialog.png)
 
 
 
@@ -886,6 +915,7 @@ the Keyfactor Command Portal
    A switch to enable the store to assume a new Role when using Default SDK credentials
 
    ![AWSSMJKS Custom Field - DefaultSdkAssumeRole](docsource/images/AWSSMJKS-custom-field-DefaultSdkAssumeRole-dialog.png)
+   ![AWSSMJKS Custom Field - DefaultSdkAssumeRole](docsource/images/AWSSMJKS-custom-field-DefaultSdkAssumeRole-validation-options-dialog.png)
 
 
 
@@ -893,6 +923,7 @@ the Keyfactor Command Portal
    A switch to enable the store to use an OAuth provider workflow to authenticate with AWS
 
    ![AWSSMJKS Custom Field - UseOAuth](docsource/images/AWSSMJKS-custom-field-UseOAuth-dialog.png)
+   ![AWSSMJKS Custom Field - UseOAuth](docsource/images/AWSSMJKS-custom-field-UseOAuth-validation-options-dialog.png)
 
 
 
@@ -900,6 +931,7 @@ the Keyfactor Command Portal
    This is the OAuth Scope needed for Okta OAuth, defined in Okta
 
    ![AWSSMJKS Custom Field - OAuthScope](docsource/images/AWSSMJKS-custom-field-OAuthScope-dialog.png)
+   ![AWSSMJKS Custom Field - OAuthScope](docsource/images/AWSSMJKS-custom-field-OAuthScope-validation-options-dialog.png)
 
 
 
@@ -907,6 +939,7 @@ the Keyfactor Command Portal
    In OAuth 2.0, the term 'grant type' refers to the way an application gets an access token. In Okta this is `client_credentials`
 
    ![AWSSMJKS Custom Field - OAuthGrantType](docsource/images/AWSSMJKS-custom-field-OAuthGrantType-dialog.png)
+   ![AWSSMJKS Custom Field - OAuthGrantType](docsource/images/AWSSMJKS-custom-field-OAuthGrantType-validation-options-dialog.png)
 
 
 
@@ -914,6 +947,7 @@ the Keyfactor Command Portal
    The token endpoint for the OAuth 2.0 provider
 
    ![AWSSMJKS Custom Field - OAuthUrl](docsource/images/AWSSMJKS-custom-field-OAuthUrl-dialog.png)
+   ![AWSSMJKS Custom Field - OAuthUrl](docsource/images/AWSSMJKS-custom-field-OAuthUrl-validation-options-dialog.png)
 
 
 
@@ -921,6 +955,7 @@ the Keyfactor Command Portal
    The Client ID for OAuth.
 
    ![AWSSMJKS Custom Field - OAuthClientId](docsource/images/AWSSMJKS-custom-field-OAuthClientId-dialog.png)
+   ![AWSSMJKS Custom Field - OAuthClientId](docsource/images/AWSSMJKS-custom-field-OAuthClientId-validation-options-dialog.png)
 
 
 
@@ -928,6 +963,7 @@ the Keyfactor Command Portal
    The Client Secret for OAuth.
 
    ![AWSSMJKS Custom Field - OAuthClientSecret](docsource/images/AWSSMJKS-custom-field-OAuthClientSecret-dialog.png)
+   ![AWSSMJKS Custom Field - OAuthClientSecret](docsource/images/AWSSMJKS-custom-field-OAuthClientSecret-validation-options-dialog.png)
 
 
 
@@ -935,6 +971,7 @@ the Keyfactor Command Portal
    A switch to enable the store to use IAM User auth to assume a role when authenticating with AWS
 
    ![AWSSMJKS Custom Field - UseIAM](docsource/images/AWSSMJKS-custom-field-UseIAM-dialog.png)
+   ![AWSSMJKS Custom Field - UseIAM](docsource/images/AWSSMJKS-custom-field-UseIAM-validation-options-dialog.png)
 
 
 
@@ -942,6 +979,7 @@ the Keyfactor Command Portal
    The AWS Access Key for an IAM User
 
    ![AWSSMJKS Custom Field - IAMUserAccessKey](docsource/images/AWSSMJKS-custom-field-IAMUserAccessKey-dialog.png)
+   ![AWSSMJKS Custom Field - IAMUserAccessKey](docsource/images/AWSSMJKS-custom-field-IAMUserAccessKey-validation-options-dialog.png)
 
 
 
@@ -949,6 +987,7 @@ the Keyfactor Command Portal
    The AWS Access Secret for an IAM User.
 
    ![AWSSMJKS Custom Field - IAMUserAccessSecret](docsource/images/AWSSMJKS-custom-field-IAMUserAccessSecret-dialog.png)
+   ![AWSSMJKS Custom Field - IAMUserAccessSecret](docsource/images/AWSSMJKS-custom-field-IAMUserAccessSecret-validation-options-dialog.png)
 
 
 
@@ -956,6 +995,7 @@ the Keyfactor Command Portal
    An optional parameter sts:ExternalId to pass with Assume Role calls
 
    ![AWSSMJKS Custom Field - ExternalId](docsource/images/AWSSMJKS-custom-field-ExternalId-dialog.png)
+   ![AWSSMJKS Custom Field - ExternalId](docsource/images/AWSSMJKS-custom-field-ExternalId-validation-options-dialog.png)
 
 
 
@@ -977,12 +1017,14 @@ the Keyfactor Command Portal
    If desired, tags can be applied to the certificate entries in AWS Secrets Manager.  Provide them as a JSON string of key-value pairs ie: '{'tag-name': 'tag-content', 'other-tag-name': 'other-tag-content'}'
 
    ![AWSSMJKS Entry Parameter - CertificateTags](docsource/images/AWSSMJKS-entry-parameters-store-type-dialog-CertificateTags.png)
+   ![AWSSMJKS Entry Parameter - CertificateTags](docsource/images/AWSSMJKS-entry-parameters-store-type-dialog-CertificateTags-validation-options.png)
 
 
    ##### Replica Regions
    To replicate secrets to other regions, you can provide them here as a JSON array in the format: [{ 'KmsKeyId': '<optionally specify the encryption key ID', 'Region': '<region name>'}, {...}]
 
    ![AWSSMJKS Entry Parameter - ReplicaRegions](docsource/images/AWSSMJKS-entry-parameters-store-type-dialog-ReplicaRegions.png)
+   ![AWSSMJKS Entry Parameter - ReplicaRegions](docsource/images/AWSSMJKS-entry-parameters-store-type-dialog-ReplicaRegions-validation-options.png)
 
 
 
