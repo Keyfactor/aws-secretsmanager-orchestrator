@@ -19,6 +19,7 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 
@@ -45,6 +46,7 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
         public virtual void Initialize(InventoryJobConfiguration config)
         {
             _logger.MethodEntry();
+            LogPluginVersion();
             _logger.LogTrace($"reading serialized configuration passed from Command to create the AwsSecretsManagerJobParameters object..");
             JobParameters = new AwsSecretsManagerJobParameters();
             JobParameters.StoreType = config.Capability.Split('.')[1] ?? null;
@@ -62,9 +64,19 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
             _logger.MethodExit();
         }
 
+        protected void LogPluginVersion()
+        {
+            var targetAssembly = Assembly.GetExecutingAssembly();
+            var assemblyName = targetAssembly?.GetName();
+            var version = assemblyName?.Version;
+            _logger.LogTrace("Keyfactor Orchestrator Extension for AWS Secrets Manager");
+            _logger.LogTrace($"{assemblyName?.Name ?? "unknown"} v{version}");
+        }
+
         public virtual void Initialize(ManagementJobConfiguration config)
         {
             _logger.MethodEntry();
+            LogPluginVersion();
 
             _logger.LogTrace($"reading serialized configuration passed from Command to create the AwsSecretsManagerJobParameters object..");
 
