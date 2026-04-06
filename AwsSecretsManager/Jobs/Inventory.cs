@@ -1,5 +1,5 @@
 ﻿
-//  Copyright 2025 Keyfactor
+//  Copyright 2026 Keyfactor
 //  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License.
 //  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 //  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS,
@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography.X509Certificates;
+using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using Amazon.SecretsManager.Model;
 using Keyfactor.Extensions.Orchestrators.AwsSecretsManager.models;
@@ -18,6 +19,7 @@ using Keyfactor.Logging;
 using Keyfactor.Orchestrators.Extensions;
 using Keyfactor.Orchestrators.Extensions.Interfaces;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using Org.BouncyCastle.Pkcs;
 
 namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
@@ -60,7 +62,7 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
                 {
                     _logger.LogTrace($@"
                         name: {secret.Name}
-                        secret string: {secret.SecretString}
+                        secret string: REDACTED 
                         secret binary length: {secret.SecretBinary?.Length}
                         tags: {secret.Tags.Count}");
 
@@ -185,7 +187,6 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
             return filters;
         }
 
-        //TODO: figure out why the values are coming back empty..
         private async Task<(List<CurrentInventoryItem>, List<string>)> ConvertSecretsJks(List<AWSSecret> secrets)
         {
             _logger.MethodEntry();
@@ -194,7 +195,7 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
             var warnings = new List<string>();
 
             // for JKS cert secrets, a tag containing the password secret name is required.  Filter out any that do not have this.
-            
+
             var certSecrets = secrets.Where(s => s.SecretBinary != null && s.Tags.Any(t => t.Key?.ToUpper() == TagNames.CERT_SECRET_PASSWORD_NAME.ToUpper()))?.ToList();
 
             if (certSecrets == null || certSecrets.Count < 1)
@@ -203,12 +204,11 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
                 return (inventory, null);
             }
 
-            _logger.LogTrace($"{secrets.Count - certSecrets.Count} secrets did not have the Tag '{TagNames.CERT_SECRET_PASSWORD_NAME}' or were missing a binary secert value and will be skipped.");
+            _logger.LogTrace($"{secrets.Count - certSecrets.Count} secrets did not have the Tag '{TagNames.CERT_SECRET_PASSWORD_NAME}' or were missing a binary secret value and will be skipped.");
 
 
             foreach (var secret in certSecrets)
             {
-                var certificateChain = new List<string>();
                 var chainCerts = new List<string>();
                 var hasPrivateKey = false;
 
@@ -265,15 +265,27 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
                         if (store.IsKeyEntry(alias)) hasPrivateKey = true;
                     }
 
-                    //return certificates.ToArray();
-
                     var inventoryItem = new CurrentInventoryItem
                     {
                         Alias = secret.Name,
-                        Certificates = certificateChain,
-                        UseChainLevel = certificateChain.Count > 1,
+                        Certificates = chainCerts,
+                        UseChainLevel = chainCerts.Count > 1,
                         PrivateKeyEntry = hasPrivateKey
                     };
+
+                    if (secret.Tags.Any())
+                    {
+                        Dictionary<string, object> tagsObj = new Dictionary<string, object>();
+                        secret.Tags.ForEach(t => {
+                            tagsObj.Add(t.Key, t.Value);
+                        });
+
+                        _logger.LogTrace($"including the certificate tags: {JsonConvert.SerializeObject(tagsObj)}");
+                        var pDict = new Dictionary<string, object>();
+                        pDict.Add("CertificateTags", tagsObj);
+                        _logger.LogTrace($"returning parameters: {JsonConvert.SerializeObject(pDict)}");
+                        inventoryItem.Parameters = pDict;
+                    }
 
                     inventory.Add(inventoryItem);
                 }
@@ -356,6 +368,20 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
                         PrivateKeyEntry = pfx.HasPrivateKey
                     };
 
+                    if (secret.Tags.Any())
+                    {
+                        Dictionary<string, object> tagsObj = new Dictionary<string, object>();
+                        secret.Tags.ForEach(t => {
+                            tagsObj.Add(t.Key, t.Value);
+                        });
+
+                        _logger.LogTrace($"including the certificate tags: {JsonConvert.SerializeObject(tagsObj)}");
+                        var pDict = new Dictionary<string, object>();
+                        pDict.Add("CertificateTags", tagsObj);
+                        _logger.LogTrace($"returning parameters: {JsonConvert.SerializeObject(pDict)}");
+                        inventoryItem.Parameters = pDict;
+                    }
+
                     // Clean up
                     pfx.Dispose();
                     chain.Dispose();
@@ -383,7 +409,6 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
             {
                 _logger.LogTrace($"parsing secret named: {potentialCert.Name}");
                 var hasPrivateKey = false;
-
                 List<string> encodedCerts = new List<string>();
 
                 try
@@ -419,13 +444,29 @@ cert contents:
                     continue;
                 }
 
-                inventoryItems.Add(new CurrentInventoryItem()
+                var newCert = new CurrentInventoryItem()
                 {
                     Alias = potentialCert.Name,
                     Certificates = encodedCerts.ToArray(),
                     PrivateKeyEntry = hasPrivateKey,
                     UseChainLevel = encodedCerts.Count > 1,
-                });
+                };
+
+                if (potentialCert.Tags.Any())
+                {
+                    Dictionary<string, object> tagsObj = new Dictionary<string, object>();
+                    potentialCert.Tags.ForEach(t => {                        
+                        tagsObj.Add(t.Key, t.Value);                    
+                    });
+                                        
+                    _logger.LogTrace($"including the certificate tags: {JsonConvert.SerializeObject(tagsObj)}");
+                    var pDict = new Dictionary<string, object>();
+                    pDict.Add("CertificateTags", tagsObj);
+                    _logger.LogTrace($"returning parameters: {JsonConvert.SerializeObject(pDict)}");
+                    newCert.Parameters = pDict;
+                }
+
+                inventoryItems.Add(newCert);
 
             } // end cert evaluation loop
             return (inventoryItems, warnings);

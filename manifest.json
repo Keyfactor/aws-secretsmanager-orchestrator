@@ -1,12 +1,28 @@
 {
   "extensions": {
     "Keyfactor.Orchestrators.Extensions.IOrchestratorJobExtension": {
-      "CertStores.AWSSM.Inventory": {
-        "assemblypath": "Keyfactor.Extensions.Orchestrators.AWSSM.dll",
+      "CertStores.AWSSMJKS.Inventory": {
+        "assemblypath": "AwsSecretsManager.dll",
         "TypeFullName": "Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs.Inventory"
       },
-      "CertStores.AWSSM.Management": {
-        "assemblypath": "Keyfactor.Extensions.Orchestrators.AWSSM.dll",
+      "CertStores.AWSSMJKS.Management": {
+        "assemblypath": "AwsSecretsManager.dll",
+        "TypeFullName": "Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs.Management"
+      },
+      "CertStores.AWSSMPFX.Inventory": {
+        "assemblypath": "AwsSecretsManager.dll",
+        "TypeFullName": "Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs.Inventory"
+      },
+      "CertStores.AWSSMPFX.Management": {
+        "assemblypath": "AwsSecretsManager.dll",
+        "TypeFullName": "Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs.Management"
+      },
+      "CertStores.AWSSMPEM.Inventory": {
+        "assemblypath": "AwsSecretsManager.dll",
+        "TypeFullName": "Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs.Inventory"
+      },
+      "CertStores.AWSSMPEM.Management": {
+        "assemblypath": "AwsSecretsManager.dll",
         "TypeFullName": "Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs.Management"
       }
     }
