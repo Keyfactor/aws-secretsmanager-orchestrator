@@ -270,6 +270,93 @@ the Keyfactor Command Portal
 
    ![AWSSMPEM Custom Fields Tab](docsource/images/AWSSMPEM-custom-fields-store-type-dialog.png)
 
+
+   ###### Use Default SDK Auth
+   A switch to enable the store to use Default SDK credentials
+
+   ![AWSSMPEM Custom Field - UseDefaultSdkAuth](docsource/images/AWSSMPEM-custom-field-UseDefaultSdkAuth-dialog.png)
+
+
+
+   ###### Assume new Role using Default SDK Auth
+   A switch to enable the store to assume a new Role when using Default SDK credentials
+
+   ![AWSSMPEM Custom Field - DefaultSdkAssumeRole](docsource/images/AWSSMPEM-custom-field-DefaultSdkAssumeRole-dialog.png)
+
+
+
+   ###### Use OAuth 2.0 Provider
+   A switch to enable the store to use an OAuth provider workflow to authenticate with AWS
+
+   ![AWSSMPEM Custom Field - UseOAuth](docsource/images/AWSSMPEM-custom-field-UseOAuth-dialog.png)
+
+
+
+   ###### OAuth Scope
+   This is the OAuth Scope needed for Okta OAuth, defined in Okta
+
+   ![AWSSMPEM Custom Field - OAuthScope](docsource/images/AWSSMPEM-custom-field-OAuthScope-dialog.png)
+
+
+
+   ###### OAuth Grant Type
+   In OAuth 2.0, the term 'grant type' refers to the way an application gets an access token. In Okta this is `client_credentials`
+
+   ![AWSSMPEM Custom Field - OAuthGrantType](docsource/images/AWSSMPEM-custom-field-OAuthGrantType-dialog.png)
+
+
+
+   ###### OAuth Url
+   The token endpoint for the OAuth 2.0 provider
+
+   ![AWSSMPEM Custom Field - OAuthUrl](docsource/images/AWSSMPEM-custom-field-OAuthUrl-dialog.png)
+
+
+
+   ###### OAuth Client ID
+   The Client ID for OAuth.
+
+   ![AWSSMPEM Custom Field - OAuthClientId](docsource/images/AWSSMPEM-custom-field-OAuthClientId-dialog.png)
+
+
+
+   ###### OAuth Client Secret
+   The Client Secret for OAuth.
+
+   ![AWSSMPEM Custom Field - OAuthClientSecret](docsource/images/AWSSMPEM-custom-field-OAuthClientSecret-dialog.png)
+
+
+
+   ###### Use IAM User Auth
+   A switch to enable the store to use IAM User auth to assume a role when authenticating with AWS
+
+   ![AWSSMPEM Custom Field - UseIAM](docsource/images/AWSSMPEM-custom-field-UseIAM-dialog.png)
+
+
+
+   ###### IAM User Access Key
+   The AWS Access Key for an IAM User
+
+   ![AWSSMPEM Custom Field - IAMUserAccessKey](docsource/images/AWSSMPEM-custom-field-IAMUserAccessKey-dialog.png)
+
+
+
+   ###### IAM User Access Secret
+   The AWS Access Secret for an IAM User.
+
+   ![AWSSMPEM Custom Field - IAMUserAccessSecret](docsource/images/AWSSMPEM-custom-field-IAMUserAccessSecret-dialog.png)
+
+
+
+   ###### sts:ExternalId
+   An optional parameter sts:ExternalId to pass with Assume Role calls
+
+   ![AWSSMPEM Custom Field - ExternalId](docsource/images/AWSSMPEM-custom-field-ExternalId-dialog.png)
+
+
+
+
+
    ##### Entry Parameters Tab
 
    | Name | Display Name | Description | Type | Default Value | Entry has a private key | Adding an entry | Removing an entry | Reenrolling an entry |
@@ -280,6 +367,20 @@ the Keyfactor Command Portal
    The Entry Parameters tab should look like this:
 
    ![AWSSMPEM Entry Parameters Tab](docsource/images/AWSSMPEM-entry-parameters-store-type-dialog.png)
+
+
+   ##### Certificate Tags
+   If desired, tags can be applied to the certificate entries in AWS Secrets Manager.  Provide them as a JSON string of key-value pairs ie: '{'tag-name': 'tag-content', 'other-tag-name': 'other-tag-content'}'
+
+   ![AWSSMPEM Entry Parameter - CertificateTags](docsource/images/AWSSMPEM-entry-parameters-store-type-dialog-CertificateTags.png)
+
+
+   ##### Replica Regions
+   To replicate secrets to other regions, you can provide them here as a JSON array in the format: [{ 'KmsKeyId': '<optionally specify the encryption key ID', 'Region': '<region name>'}, {...}]
+
+   ![AWSSMPEM Entry Parameter - ReplicaRegions](docsource/images/AWSSMPEM-entry-parameters-store-type-dialog-ReplicaRegions.png)
+
+
 
    </details>
 </details>
@@ -471,6 +572,93 @@ the Keyfactor Command Portal
 
    ![AWSSMPFX Custom Fields Tab](docsource/images/AWSSMPFX-custom-fields-store-type-dialog.png)
 
+
+   ###### Use Default SDK Auth
+   A switch to enable the store to use Default SDK credentials
+
+   ![AWSSMPFX Custom Field - UseDefaultSdkAuth](docsource/images/AWSSMPFX-custom-field-UseDefaultSdkAuth-dialog.png)
+
+
+
+   ###### Assume new Role using Default SDK Auth
+   A switch to enable the store to assume a new Role when using Default SDK credentials
+
+   ![AWSSMPFX Custom Field - DefaultSdkAssumeRole](docsource/images/AWSSMPFX-custom-field-DefaultSdkAssumeRole-dialog.png)
+
+
+
+   ###### Use OAuth 2.0 Provider
+   A switch to enable the store to use an OAuth provider workflow to authenticate with AWS
+
+   ![AWSSMPFX Custom Field - UseOAuth](docsource/images/AWSSMPFX-custom-field-UseOAuth-dialog.png)
+
+
+
+   ###### OAuth Scope
+   This is the OAuth Scope needed for Okta OAuth, defined in Okta
+
+   ![AWSSMPFX Custom Field - OAuthScope](docsource/images/AWSSMPFX-custom-field-OAuthScope-dialog.png)
+
+
+
+   ###### OAuth Grant Type
+   In OAuth 2.0, the term 'grant type' refers to the way an application gets an access token. In Okta this is `client_credentials`
+
+   ![AWSSMPFX Custom Field - OAuthGrantType](docsource/images/AWSSMPFX-custom-field-OAuthGrantType-dialog.png)
+
+
+
+   ###### OAuth Url
+   The token endpoint for the OAuth 2.0 provider
+
+   ![AWSSMPFX Custom Field - OAuthUrl](docsource/images/AWSSMPFX-custom-field-OAuthUrl-dialog.png)
+
+
+
+   ###### OAuth Client ID
+   The Client ID for OAuth.
+
+   ![AWSSMPFX Custom Field - OAuthClientId](docsource/images/AWSSMPFX-custom-field-OAuthClientId-dialog.png)
+
+
+
+   ###### OAuth Client Secret
+   The Client Secret for OAuth.
+
+   ![AWSSMPFX Custom Field - OAuthClientSecret](docsource/images/AWSSMPFX-custom-field-OAuthClientSecret-dialog.png)
+
+
+
+   ###### Use IAM User Auth
+   A switch to enable the store to use IAM User auth to assume a role when authenticating with AWS
+
+   ![AWSSMPFX Custom Field - UseIAM](docsource/images/AWSSMPFX-custom-field-UseIAM-dialog.png)
+
+
+
+   ###### IAM User Access Key
+   The AWS Access Key for an IAM User
+
+   ![AWSSMPFX Custom Field - IAMUserAccessKey](docsource/images/AWSSMPFX-custom-field-IAMUserAccessKey-dialog.png)
+
+
+
+   ###### IAM User Access Secret
+   The AWS Access Secret for an IAM User.
+
+   ![AWSSMPFX Custom Field - IAMUserAccessSecret](docsource/images/AWSSMPFX-custom-field-IAMUserAccessSecret-dialog.png)
+
+
+
+   ###### sts:ExternalId
+   An optional parameter sts:ExternalId to pass with Assume Role calls
+
+   ![AWSSMPFX Custom Field - ExternalId](docsource/images/AWSSMPFX-custom-field-ExternalId-dialog.png)
+
+
+
+
+
    ##### Entry Parameters Tab
 
    | Name | Display Name | Description | Type | Default Value | Entry has a private key | Adding an entry | Removing an entry | Reenrolling an entry |
@@ -481,6 +669,20 @@ the Keyfactor Command Portal
    The Entry Parameters tab should look like this:
 
    ![AWSSMPFX Entry Parameters Tab](docsource/images/AWSSMPFX-entry-parameters-store-type-dialog.png)
+
+
+   ##### Certificate Tags
+   If desired, tags can be applied to the certificate entries in AWS Secrets Manager.  Provide them as a JSON string of key-value pairs ie: '{'tag-name': 'tag-content', 'other-tag-name': 'other-tag-content'}'
+
+   ![AWSSMPFX Entry Parameter - CertificateTags](docsource/images/AWSSMPFX-entry-parameters-store-type-dialog-CertificateTags.png)
+
+
+   ##### Replica Regions
+   To replicate secrets to other regions, you can provide them here as a JSON array in the format: [{ 'KmsKeyId': '<optionally specify the encryption key ID', 'Region': '<region name>'}, {...}]
+
+   ![AWSSMPFX Entry Parameter - ReplicaRegions](docsource/images/AWSSMPFX-entry-parameters-store-type-dialog-ReplicaRegions.png)
+
+
 
    </details>
 </details>
@@ -672,6 +874,93 @@ the Keyfactor Command Portal
 
    ![AWSSMJKS Custom Fields Tab](docsource/images/AWSSMJKS-custom-fields-store-type-dialog.png)
 
+
+   ###### Use Default SDK Auth
+   A switch to enable the store to use Default SDK credentials
+
+   ![AWSSMJKS Custom Field - UseDefaultSdkAuth](docsource/images/AWSSMJKS-custom-field-UseDefaultSdkAuth-dialog.png)
+
+
+
+   ###### Assume new Role using Default SDK Auth
+   A switch to enable the store to assume a new Role when using Default SDK credentials
+
+   ![AWSSMJKS Custom Field - DefaultSdkAssumeRole](docsource/images/AWSSMJKS-custom-field-DefaultSdkAssumeRole-dialog.png)
+
+
+
+   ###### Use OAuth 2.0 Provider
+   A switch to enable the store to use an OAuth provider workflow to authenticate with AWS
+
+   ![AWSSMJKS Custom Field - UseOAuth](docsource/images/AWSSMJKS-custom-field-UseOAuth-dialog.png)
+
+
+
+   ###### OAuth Scope
+   This is the OAuth Scope needed for Okta OAuth, defined in Okta
+
+   ![AWSSMJKS Custom Field - OAuthScope](docsource/images/AWSSMJKS-custom-field-OAuthScope-dialog.png)
+
+
+
+   ###### OAuth Grant Type
+   In OAuth 2.0, the term 'grant type' refers to the way an application gets an access token. In Okta this is `client_credentials`
+
+   ![AWSSMJKS Custom Field - OAuthGrantType](docsource/images/AWSSMJKS-custom-field-OAuthGrantType-dialog.png)
+
+
+
+   ###### OAuth Url
+   The token endpoint for the OAuth 2.0 provider
+
+   ![AWSSMJKS Custom Field - OAuthUrl](docsource/images/AWSSMJKS-custom-field-OAuthUrl-dialog.png)
+
+
+
+   ###### OAuth Client ID
+   The Client ID for OAuth.
+
+   ![AWSSMJKS Custom Field - OAuthClientId](docsource/images/AWSSMJKS-custom-field-OAuthClientId-dialog.png)
+
+
+
+   ###### OAuth Client Secret
+   The Client Secret for OAuth.
+
+   ![AWSSMJKS Custom Field - OAuthClientSecret](docsource/images/AWSSMJKS-custom-field-OAuthClientSecret-dialog.png)
+
+
+
+   ###### Use IAM User Auth
+   A switch to enable the store to use IAM User auth to assume a role when authenticating with AWS
+
+   ![AWSSMJKS Custom Field - UseIAM](docsource/images/AWSSMJKS-custom-field-UseIAM-dialog.png)
+
+
+
+   ###### IAM User Access Key
+   The AWS Access Key for an IAM User
+
+   ![AWSSMJKS Custom Field - IAMUserAccessKey](docsource/images/AWSSMJKS-custom-field-IAMUserAccessKey-dialog.png)
+
+
+
+   ###### IAM User Access Secret
+   The AWS Access Secret for an IAM User.
+
+   ![AWSSMJKS Custom Field - IAMUserAccessSecret](docsource/images/AWSSMJKS-custom-field-IAMUserAccessSecret-dialog.png)
+
+
+
+   ###### sts:ExternalId
+   An optional parameter sts:ExternalId to pass with Assume Role calls
+
+   ![AWSSMJKS Custom Field - ExternalId](docsource/images/AWSSMJKS-custom-field-ExternalId-dialog.png)
+
+
+
+
+
    ##### Entry Parameters Tab
 
    | Name | Display Name | Description | Type | Default Value | Entry has a private key | Adding an entry | Removing an entry | Reenrolling an entry |
@@ -683,6 +972,20 @@ the Keyfactor Command Portal
 
    ![AWSSMJKS Entry Parameters Tab](docsource/images/AWSSMJKS-entry-parameters-store-type-dialog.png)
 
+
+   ##### Certificate Tags
+   If desired, tags can be applied to the certificate entries in AWS Secrets Manager.  Provide them as a JSON string of key-value pairs ie: '{'tag-name': 'tag-content', 'other-tag-name': 'other-tag-content'}'
+
+   ![AWSSMJKS Entry Parameter - CertificateTags](docsource/images/AWSSMJKS-entry-parameters-store-type-dialog-CertificateTags.png)
+
+
+   ##### Replica Regions
+   To replicate secrets to other regions, you can provide them here as a JSON array in the format: [{ 'KmsKeyId': '<optionally specify the encryption key ID', 'Region': '<region name>'}, {...}]
+
+   ![AWSSMJKS Entry Parameter - ReplicaRegions](docsource/images/AWSSMJKS-entry-parameters-store-type-dialog-ReplicaRegions.png)
+
+
+
    </details>
 </details>
 
@@ -691,15 +994,14 @@ the Keyfactor Command Portal
 
 1. **Download the latest AWS Secrets Manager Universal Orchestrator extension from GitHub.**
 
-    Navigate to the [AWS Secrets Manager Universal Orchestrator extension GitHub version page](https://github.com/Keyfactor/aws-secretsmanager-orchestrator/releases/latest). Refer to the compatibility matrix below to determine whether the `net6.0` or `net8.0` asset should be downloaded. Then, click the corresponding asset to download the zip archive.
+    Navigate to the [AWS Secrets Manager Universal Orchestrator extension GitHub version page](https://github.com/Keyfactor/aws-secretsmanager-orchestrator/releases/latest). Refer to the compatibility matrix below to determine the asset should be downloaded. Then, click the corresponding asset to download the zip archive.
 
    | Universal Orchestrator Version | Latest .NET version installed on the Universal Orchestrator server | `rollForward` condition in `Orchestrator.runtimeconfig.json` | `aws-secretsmanager-orchestrator` .NET version to download |
    | --------- | ----------- | ----------- | ----------- |
    | Older than `11.0.0` | | | `net6.0` |
    | Between `11.0.0` and `11.5.1` (inclusive) | `net6.0` | | `net6.0` |
-   | Between `11.0.0` and `11.5.1` (inclusive) | `net8.0` | `Disable` | `net6.0` |
-   | Between `11.0.0` and `11.5.1` (inclusive) | `net8.0` | `LatestMajor` | `net8.0` |
-   | `11.6` _and_ newer | `net8.0` | | `net8.0` |
+   | Between `11.0.0` and `11.5.1` (inclusive) | `net8.0` | `Disable` | `net6.0` || Between `11.0.0` and `11.5.1` (inclusive) | `net8.0` | `LatestMajor` | `net8.0` |
+   | `11.6` _and_ newer | `net8.0` | | `net8.0` | 
 
     Unzip the archive containing extension assemblies to a known location.
 
