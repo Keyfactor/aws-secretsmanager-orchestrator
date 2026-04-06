@@ -1,5 +1,5 @@
 ﻿
-//  Copyright 2025 Keyfactor
+//  Copyright 2026 Keyfactor
 //  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License.
 //  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 //  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,6 +18,7 @@ using Keyfactor.Logging;
 using Keyfactor.Orchestrators.Extensions;
 using Keyfactor.Orchestrators.Extensions.Interfaces;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using Org.BouncyCastle.Pkcs;
 
 namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
@@ -194,7 +195,7 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
             var warnings = new List<string>();
 
             // for JKS cert secrets, a tag containing the password secret name is required.  Filter out any that do not have this.
-            
+
             var certSecrets = secrets.Where(s => s.SecretBinary != null && s.Tags.Any(t => t.Key?.ToUpper() == TagNames.CERT_SECRET_PASSWORD_NAME.ToUpper()))?.ToList();
 
             if (certSecrets == null || certSecrets.Count < 1)
@@ -383,7 +384,6 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
             {
                 _logger.LogTrace($"parsing secret named: {potentialCert.Name}");
                 var hasPrivateKey = false;
-
                 List<string> encodedCerts = new List<string>();
 
                 try
@@ -419,13 +419,25 @@ cert contents:
                     continue;
                 }
 
-                inventoryItems.Add(new CurrentInventoryItem()
+
+                var newCert = new CurrentInventoryItem()
                 {
                     Alias = potentialCert.Name,
                     Certificates = encodedCerts.ToArray(),
                     PrivateKeyEntry = hasPrivateKey,
                     UseChainLevel = encodedCerts.Count > 1,
-                });
+                };
+
+                var tags = JsonConvert.SerializeObject(potentialCert.Tags);
+                if (tags != string.Empty && tags != null)
+                {
+                    _logger.LogTrace("including the certificate tags..");
+                    var pDict = new Dictionary<string, object>();
+                    pDict.Add("CertificateTags", tags);
+                    newCert.Parameters = pDict;
+                }
+
+                inventoryItems.Add(newCert);
 
             } // end cert evaluation loop
             return (inventoryItems, warnings);
