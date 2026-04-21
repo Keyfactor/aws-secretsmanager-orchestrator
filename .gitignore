@@ -349,3 +349,6 @@ MigrationBackup/
 # Ionide (cross platform F# VS Code tools) working folder
 .ionide/
 /AwsSecretsManager/AwsSecretsManager.licenseheader
+/AwsSecretsManager/AwsSecretsManager.licenseheader
+/README.md
+/readme_source.md

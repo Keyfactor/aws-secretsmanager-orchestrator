@@ -1,5 +1,5 @@
 ﻿
-//  Copyright 2025 Keyfactor
+//  Copyright 2026 Keyfactor
 //  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License.
 //  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 //  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,6 +19,7 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 
@@ -45,6 +46,7 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
         public virtual void Initialize(InventoryJobConfiguration config)
         {
             _logger.MethodEntry();
+            LogPluginVersion();
             _logger.LogTrace($"reading serialized configuration passed from Command to create the AwsSecretsManagerJobParameters object..");
             JobParameters = new AwsSecretsManagerJobParameters();
             JobParameters.StoreType = config.Capability.Split('.')[1] ?? null;
@@ -62,9 +64,19 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
             _logger.MethodExit();
         }
 
+        protected void LogPluginVersion()
+        {
+            var targetAssembly = Assembly.GetExecutingAssembly();
+            var assemblyName = targetAssembly?.GetName();
+            var version = assemblyName?.Version;
+            _logger.LogTrace("Keyfactor Orchestrator Extension for AWS Secrets Manager");
+            _logger.LogTrace($"{assemblyName?.Name ?? "unknown"} v{version}");
+        }
+
         public virtual void Initialize(ManagementJobConfiguration config)
         {
             _logger.MethodEntry();
+            LogPluginVersion();
 
             _logger.LogTrace($"reading serialized configuration passed from Command to create the AwsSecretsManagerJobParameters object..");
 
