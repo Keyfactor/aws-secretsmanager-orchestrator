@@ -63,7 +63,7 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
         /// Lists all secrets that contain the provided Tag Key value.  
         /// We retreive these in batches of maximum 20 size and loop until we've gotten them all.
         /// </summary>
-        public async Task<List<AWSSecret>> GetSecrets(List<Filter> filters)
+        public virtual async Task<List<AWSSecret>> GetSecrets(List<Filter> filters)
         {
             _logger.MethodEntry();
             var results = new List<AWSSecret>();
@@ -184,7 +184,7 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
         /// <param name="secretName"></param>
         /// <param name="certProps"></param>
         /// <returns></returns>
-        public async Task<string> AddOrUpdateSecret(AwsSecretsManagerJobParameters jobParameters)
+        public virtual async Task<string> AddOrUpdateSecret(AwsSecretsManagerJobParameters jobParameters)
         {
             _logger.MethodEntry();
             _logger.LogTrace($"the certificate alias is '{jobParameters.CertProperties.Alias}'.  The resolved the secret name in AWS will be '{jobParameters.SecretName}'");
@@ -225,7 +225,7 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
             }
         }
 
-        public async Task<bool> SecretExists(string secretName)
+        public virtual async Task<bool> SecretExists(string secretName)
         {
             _logger.MethodEntry();
 
@@ -626,7 +626,7 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
         /// </summary>
         /// <param name="secretName"></param>
         /// <returns></returns>
-        public async Task<(string, string)> RemoveSecret(string secretName)
+        public virtual async Task<(string, string)> RemoveSecret(string secretName)
         {
             _logger.MethodEntry();
 
