@@ -38,7 +38,8 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
             _logger.LogTrace($"received new inventory job. Job ID = {config.JobId}");
             _logger.LogTrace($"initializing inventory job..");
 
-            base.Initialize(config);
+            // Virtual dispatch: tests can override Initialize to skip AWS auth wiring.
+            Initialize(config);
 
             _logger.LogDebug($"begin Inventory...");
 
@@ -275,14 +276,15 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
 
                     if (secret.Tags.Any())
                     {
-                        Dictionary<string, object> tagsObj = new Dictionary<string, object>();
+                        var tagsDict = new Dictionary<string, string>();
                         secret.Tags.ForEach(t => {
-                            tagsObj.Add(t.Key, t.Value);
+                            tagsDict.Add(t.Key, t.Value);
                         });
 
-                        _logger.LogTrace($"including the certificate tags: {JsonConvert.SerializeObject(tagsObj)}");
+                        _logger.LogTrace($"including the certificate tags: {JsonConvert.SerializeObject(tagsDict)}");
+                        var tagsDictSerialized = JsonConvert.SerializeObject(tagsDict);
                         var pDict = new Dictionary<string, object>();
-                        pDict.Add("CertificateTags", tagsObj);
+                        pDict.Add("CertificateTags", tagsDictSerialized);
                         _logger.LogTrace($"returning parameters: {JsonConvert.SerializeObject(pDict)}");
                         inventoryItem.Parameters = pDict;
                     }
@@ -322,7 +324,7 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
                 return (inventory, warnings);
             }
 
-            _logger.LogTrace($"{secrets.Count - certSecrets.Count} secrets did not have the Tag '{TagNames.CERT_SECRET_PASSWORD_NAME}' or were missing a binary secert value and will be skipped.");
+            _logger.LogTrace($"{secrets.Count - certSecrets.Count} secrets did not have the Tag '{TagNames.CERT_SECRET_PASSWORD_NAME}' or were missing a binary secret value and will be skipped.");
 
             foreach (var secret in certSecrets)
             {
@@ -370,14 +372,15 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
 
                     if (secret.Tags.Any())
                     {
-                        Dictionary<string, object> tagsObj = new Dictionary<string, object>();
+                        var tagsDict = new Dictionary<string, string>();
                         secret.Tags.ForEach(t => {
-                            tagsObj.Add(t.Key, t.Value);
+                            tagsDict.Add(t.Key, t.Value);
                         });
 
-                        _logger.LogTrace($"including the certificate tags: {JsonConvert.SerializeObject(tagsObj)}");
+                        _logger.LogTrace($"including the certificate tags: {JsonConvert.SerializeObject(tagsDict)}");
+                        var tagsDictSerialized = JsonConvert.SerializeObject(tagsDict);
                         var pDict = new Dictionary<string, object>();
-                        pDict.Add("CertificateTags", tagsObj);
+                        pDict.Add("CertificateTags", tagsDictSerialized);
                         _logger.LogTrace($"returning parameters: {JsonConvert.SerializeObject(pDict)}");
                         inventoryItem.Parameters = pDict;
                     }
@@ -454,14 +457,15 @@ cert contents:
 
                 if (potentialCert.Tags.Any())
                 {
-                    Dictionary<string, object> tagsObj = new Dictionary<string, object>();
+                    var tagsDict = new Dictionary<string, string>();
                     potentialCert.Tags.ForEach(t => {                        
-                        tagsObj.Add(t.Key, t.Value);                    
+                        tagsDict.Add(t.Key, t.Value);                    
                     });
                                         
-                    _logger.LogTrace($"including the certificate tags: {JsonConvert.SerializeObject(tagsObj)}");
-                    var pDict = new Dictionary<string, object>();
-                    pDict.Add("CertificateTags", tagsObj);
+                    _logger.LogTrace($"including the certificate tags: {JsonConvert.SerializeObject(tagsDict)}");
+                    var tagsDictSerialized = JsonConvert.SerializeObject(tagsDict);
+                    var pDict = new Dictionary<string, object>();                    
+                    pDict.Add("CertificateTags", tagsDictSerialized);
                     _logger.LogTrace($"returning parameters: {JsonConvert.SerializeObject(pDict)}");
                     newCert.Parameters = pDict;
                 }
