@@ -30,7 +30,8 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
             _logger.LogTrace($"received new Management > {jobType} job. Job ID = {config.JobId}");
             _logger.LogTrace($"initializing Management > {jobType} job..");
 
-            base.Initialize(config);
+            // Virtual dispatch: tests can override Initialize to skip AWS auth wiring.
+            Initialize(config);
 
             _logger.LogDebug($"begin Management > {jobType}...");
 
