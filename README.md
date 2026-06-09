@@ -253,6 +253,7 @@ the Keyfactor Command Portal
 
    | Name | Display Name | Description | Type | Default Value/Options | Required |
    | ---- | ------------ | ---- | --------------------- | -------- | ----------- |
+   | SeparatePrivateKey | Store as JSON with separate private key | When enabled, the certificate is stored as a JSON document with separate 'certificate' (PEM certificate and chain, leaf first) and 'private_key' (PEM) properties, rather than a single concatenated PEM string. | Bool | false | 🔲 Unchecked |
    | UseDefaultSdkAuth | Use Default SDK Auth | A switch to enable the store to use Default SDK credentials | Bool | false | ✅ Checked |
    | DefaultSdkAssumeRole | Assume new Role using Default SDK Auth | A switch to enable the store to assume a new Role when using Default SDK credentials | Bool | false | 🔲 Unchecked |
    | UseOAuth | Use OAuth 2.0 Provider | A switch to enable the store to use an OAuth provider workflow to authenticate with AWS | Bool | false | ✅ Checked |
@@ -269,6 +270,14 @@ the Keyfactor Command Portal
    The Custom Fields tab should look like this:
 
    ![AWSSMPEM Custom Fields Tab](docsource/images/AWSSMPEM-custom-fields-store-type-dialog.png)
+
+
+   ###### Store as JSON with separate private key
+   When enabled, the certificate is stored as a JSON document with separate 'certificate' (PEM certificate and chain, leaf first) and 'private_key' (PEM) properties, rather than a single concatenated PEM string.
+
+   ![AWSSMPEM Custom Field - SeparatePrivateKey](docsource/images/AWSSMPEM-custom-field-SeparatePrivateKey-dialog.png)
+   ![AWSSMPEM Custom Field - SeparatePrivateKey](docsource/images/AWSSMPEM-custom-field-SeparatePrivateKey-validation-options-dialog.png)
+
 
 
    ###### Use Default SDK Auth
@@ -1105,6 +1114,7 @@ The AWS Secrets Manager Universal Orchestrator extension implements 3 Certificat
    | Client Machine |  |
    | Store Path | The store path contains the AWS region where the SecretsManager resides.  It can optionally accept values for tags OR path prefix for identifying secrets to be managed by the cert store instance.  example:'us-east-2 [prefix='dev/midwest']' or 'us-east1 [tagName='managedBy' tagValue='keyfactor']'  |
    | Orchestrator | Select an approved orchestrator capable of managing `AWSSMPEM` certificates. Specifically, one with the `AWSSMPEM` capability. |
+   | SeparatePrivateKey | When enabled, the certificate is stored as a JSON document with separate 'certificate' (PEM certificate and chain, leaf first) and 'private_key' (PEM) properties, rather than a single concatenated PEM string. |
    | UseDefaultSdkAuth | A switch to enable the store to use Default SDK credentials |
    | DefaultSdkAssumeRole | A switch to enable the store to assume a new Role when using Default SDK credentials |
    | UseOAuth | A switch to enable the store to use an OAuth provider workflow to authenticate with AWS |
@@ -1142,6 +1152,7 @@ The AWS Secrets Manager Universal Orchestrator extension implements 3 Certificat
    | Client Machine |  |
    | Store Path | The store path contains the AWS region where the SecretsManager resides.  It can optionally accept values for tags OR path prefix for identifying secrets to be managed by the cert store instance.  example:'us-east-2 [prefix='dev/midwest']' or 'us-east1 [tagName='managedBy' tagValue='keyfactor']'  |
    | Orchestrator | Select an approved orchestrator capable of managing `AWSSMPEM` certificates. Specifically, one with the `AWSSMPEM` capability. |
+   | Properties.SeparatePrivateKey | When enabled, the certificate is stored as a JSON document with separate 'certificate' (PEM certificate and chain, leaf first) and 'private_key' (PEM) properties, rather than a single concatenated PEM string. |
    | Properties.UseDefaultSdkAuth | A switch to enable the store to use Default SDK credentials |
    | Properties.DefaultSdkAssumeRole | A switch to enable the store to assume a new Role when using Default SDK credentials |
    | Properties.UseOAuth | A switch to enable the store to use an OAuth provider workflow to authenticate with AWS |
