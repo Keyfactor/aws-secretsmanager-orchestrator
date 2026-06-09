@@ -2,13 +2,13 @@
   "$schema": "https://keyfactor.github.io/v2/integration-manifest-schema.json",
   "description": "This orchestrator extension allows managing Certificates stored in AWS Secrets Manager",
   "integration_type": "orchestrator",
-  "link_github": true,
+  "link_github": false,
   "name": "AWS Secrets Manager",
   "release_dir": "AwsSecretsManager/bin/Release",
   "release_project": "AwsSecretsManager/AwsSecretsManager.csproj",
   "status": "prototype",
   "support_level": "community",
-  "update_catalog": true,
+  "update_catalog": false,
 
   "about": {
     "orchestrator": {
@@ -30,6 +30,16 @@
             "Remove": true
           },
           "Properties": [
+            {
+              "Name": "SeparatePrivateKey",
+              "DisplayName": "Store as JSON with separate private key",
+              "Type": "Bool",
+              "DependsOn": "",
+              "DefaultValue": "false",
+              "Required": false,
+              "IsPAMEligible": false,
+              "Description": "When enabled, the certificate is stored as a JSON document with separate 'certificate' (PEM certificate and chain, leaf first) and 'private_key' (PEM) properties, rather than a single concatenated PEM string."
+            },
             {
               "Name": "UseDefaultSdkAuth",
               "DisplayName": "Use Default SDK Auth",

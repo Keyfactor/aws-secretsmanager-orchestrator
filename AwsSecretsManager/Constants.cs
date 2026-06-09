@@ -14,6 +14,13 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
         public const string STORE_TYPE_PFX = "AWSSMPFX";
         public const string STORE_TYPE_JKS = "AWSSMJKS";
     }
+
+    public static class StorePropertyNames
+    {
+        // Boolean store-type custom field (AWSSMPEM) that switches the secret value to a
+        // JSON document with separate "certificate" and "private_key" PEM properties.
+        public const string SEPARATE_PRIVATE_KEY = "SeparatePrivateKey";
+    }
     public static class KeyfactorJobType
     {
         public const string INVENTORY = "Inventory";

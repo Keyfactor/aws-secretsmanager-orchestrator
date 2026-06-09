@@ -79,6 +79,15 @@ New-StoreType "AWSSMPEM" @'
   },
   "Properties": [
     {
+      "Name": "SeparatePrivateKey",
+      "DisplayName": "Store as JSON with separate private key",
+      "Type": "Bool",
+      "DependsOn": "",
+      "DefaultValue": "false",
+      "Required": false,
+      "IsPAMEligible": false
+    },
+    {
       "Name": "UseDefaultSdkAuth",
       "DisplayName": "Use Default SDK Auth",
       "Type": "Bool",
