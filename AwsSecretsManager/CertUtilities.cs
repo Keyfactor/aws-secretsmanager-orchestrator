@@ -80,69 +80,161 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
             if (string.IsNullOrEmpty(base64Pfx))
                 throw new ArgumentException("Base64 PFX string cannot be null or empty", nameof(base64Pfx));
 
+            byte[] pfxBytes;
             try
             {
-                // Convert base64 string to byte array
-                byte[] pfxBytes = Convert.FromBase64String(base64Pfx);
-
-                // Load the certificate with private key
-                X509Certificate2 cert = new X509Certificate2(pfxBytes, password,
-                    X509KeyStorageFlags.Exportable | X509KeyStorageFlags.PersistKeySet);
-
-                StringBuilder pemBuilder = new StringBuilder();
-
-                // Export the certificate as PEM
-                byte[] certBytes = cert.Export(X509ContentType.Cert);
-                string certPem = Convert.ToBase64String(certBytes);
-                pemBuilder.AppendLine("-----BEGIN CERTIFICATE-----");
-                pemBuilder.AppendLine(FormatBase64String(certPem));
-                pemBuilder.AppendLine("-----END CERTIFICATE-----");
-
-                // Export the private key as PEM
-                if (cert.HasPrivateKey)
-                {
-                    // For RSA keys
-                    if (cert.GetRSAPrivateKey() != null)
-                    {
-                        RSA rsa = cert.GetRSAPrivateKey();
-                        byte[] privateKeyBytes = rsa.ExportPkcs8PrivateKey();
-                        string privateKeyPem = Convert.ToBase64String(privateKeyBytes);
-
-                        pemBuilder.AppendLine("-----BEGIN PRIVATE KEY-----");
-                        pemBuilder.AppendLine(FormatBase64String(privateKeyPem));
-                        pemBuilder.AppendLine("-----END PRIVATE KEY-----");
-                    }
-                    // For ECDSA keys
-                    else if (cert.GetECDsaPrivateKey() != null)
-                    {
-                        ECDsa ecdsa = cert.GetECDsaPrivateKey();
-                        byte[] privateKeyBytes = ecdsa.ExportPkcs8PrivateKey();
-                        string privateKeyPem = Convert.ToBase64String(privateKeyBytes);
-
-                        pemBuilder.AppendLine("-----BEGIN PRIVATE KEY-----");
-                        pemBuilder.AppendLine(FormatBase64String(privateKeyPem));
-                        pemBuilder.AppendLine("-----END PRIVATE KEY-----");
-                    }
-                    else
-                    {
-                        throw new NotSupportedException("Unsupported private key algorithm");
-                    }
-                }
-                else
-                {
-                    throw new InvalidOperationException("Certificate does not contain a private key");
-                }
-
-                return pemBuilder.ToString();
-            }
-            catch (CryptographicException ex)
-            {
-                throw new InvalidOperationException("Failed to process PFX certificate. Check the base64 string and password.", ex);
+                pfxBytes = Convert.FromBase64String(base64Pfx);
             }
             catch (FormatException ex)
             {
                 throw new ArgumentException("Invalid base64 string format", nameof(base64Pfx), ex);
             }
+
+            try
+            {
+                // Legacy PEM format: the leaf certificate followed by its private key (no chain).
+                // Certificates are read via .NET (public data only, no key export); the private
+                // key is exported via BouncyCastle to avoid the .NET/CNG export failure on Windows.
+                var leafPem = BuildCertPemFromPfx(pfxBytes, password, leafOnly: true);
+                var keyPem = GetPrivateKeyPem(pfxBytes, password);
+                return leafPem + "\n" + keyPem;
+            }
+            catch (InvalidOperationException)
+            {
+                throw; // preserve the specific "no private key" contract
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException("Failed to process PFX certificate. Check the base64 string and password.", ex);
+            }
+        }
+
+        /// <summary>
+        /// Converts a base64-encoded PFX into a (certificate, private_key) pair of PEM strings
+        /// for the SeparatePrivateKey JSON format.
+        ///   - certificate: the leaf certificate followed by the rest of the chain, leaf first.
+        ///   - private_key: the private key in PKCS#8 form ("-----BEGIN PRIVATE KEY-----"),
+        ///     identical to the encoding used by ConvertPfxToPem.
+        /// </summary>
+        public static (string certificatePem, string privateKeyPem) ConvertPfxToCertAndKeyPem(string base64Pfx, string password)
+        {
+            if (string.IsNullOrEmpty(base64Pfx))
+                throw new ArgumentException("Base64 PFX string cannot be null or empty", nameof(base64Pfx));
+
+            byte[] pfxBytes;
+            try
+            {
+                pfxBytes = Convert.FromBase64String(base64Pfx);
+            }
+            catch (FormatException ex)
+            {
+                throw new ArgumentException("Invalid base64 string format", nameof(base64Pfx), ex);
+            }
+
+            var certificatePem = BuildCertPemFromPfx(pfxBytes, password, leafOnly: false);
+            var privateKeyPem = GetPrivateKeyPem(pfxBytes, password);
+
+            return (certificatePem, privateKeyPem);
+        }
+
+        /// <summary>
+        /// Reads the certificates from a PFX (public data only, via .NET) and returns them as
+        /// concatenated PEM blocks. The leaf (the entry that carries the private key) is placed
+        /// first; when leafOnly is false the issuer chain follows, ordered by walking
+        /// issuer/subject links rather than trusting any library's chain association.
+        /// </summary>
+        private static string BuildCertPemFromPfx(byte[] pfxBytes, string password, bool leafOnly)
+        {
+            var collection = new X509Certificate2Collection();
+            collection.Import(pfxBytes, password, X509KeyStorageFlags.EphemeralKeySet);
+            try
+            {
+                var all = collection.Cast<X509Certificate2>().ToList();
+                if (!all.Any())
+                    throw new InvalidOperationException("No certificates found in PFX");
+
+                var leaf = all.FirstOrDefault(c => c.HasPrivateKey);
+                if (leaf == null)
+                    throw new InvalidOperationException("Certificate does not contain a private key");
+
+                var ordered = new List<X509Certificate2> { leaf };
+
+                if (!leafOnly)
+                {
+                    var remaining = all.Where(c => !ReferenceEquals(c, leaf)).ToList();
+                    var current = leaf;
+
+                    // Walk issuer links: find the cert whose Subject matches the current Issuer.
+                    while (remaining.Count > 0 && !IsSelfSigned(current))
+                    {
+                        var issuer = remaining.FirstOrDefault(
+                            c => c.SubjectName.RawData.SequenceEqual(current.IssuerName.RawData));
+                        if (issuer == null) break;
+                        ordered.Add(issuer);
+                        remaining.Remove(issuer);
+                        current = issuer;
+                    }
+
+                    // Defensive: include any certs we couldn't place rather than dropping them.
+                    ordered.AddRange(remaining);
+                }
+
+                var sb = new StringBuilder();
+                foreach (var cert in ordered)
+                {
+                    sb.AppendLine("-----BEGIN CERTIFICATE-----");
+                    sb.AppendLine(FormatBase64String(Convert.ToBase64String(cert.RawData)));
+                    sb.AppendLine("-----END CERTIFICATE-----");
+                }
+                return sb.ToString().TrimEnd();
+            }
+            finally
+            {
+                foreach (var cert in collection)
+                {
+                    cert.Dispose();
+                }
+            }
+        }
+
+        private static bool IsSelfSigned(X509Certificate2 cert)
+            => cert.SubjectName.RawData.SequenceEqual(cert.IssuerName.RawData);
+
+        /// <summary>
+        /// Exports the PFX private key as a PKCS#8 PEM block via BouncyCastle, avoiding the
+        /// platform-specific .NET/CNG export path.
+        /// </summary>
+        private static string GetPrivateKeyPem(byte[] pfxBytes, string password)
+        {
+            var store = new Pkcs12StoreBuilder().Build();
+            using (var ms = new MemoryStream(pfxBytes))
+            {
+                store.Load(ms, password?.ToCharArray() ?? new char[0]);
+            }
+
+            var keyAlias = store.Aliases.Cast<string>().FirstOrDefault(a => store.IsKeyEntry(a));
+            if (keyAlias == null)
+                throw new InvalidOperationException("Certificate does not contain a private key");
+
+            return ExportPrivateKeyPem(store.GetKey(keyAlias).Key);
+        }
+
+        /// <summary>
+        /// Exports a BouncyCastle private key as an unencrypted PKCS#8 PEM block
+        /// ("-----BEGIN PRIVATE KEY-----"), matching the header convention used elsewhere.
+        /// Sourcing the key from the PKCS12 store avoids the platform-specific .NET/CNG export
+        /// path and works uniformly for RSA and ECDSA keys.
+        /// </summary>
+        private static string ExportPrivateKeyPem(AsymmetricKeyParameter privateKey)
+        {
+            var pkcs8 = PrivateKeyInfoFactory.CreatePrivateKeyInfo(privateKey);
+            var der = pkcs8.GetDerEncoded();
+
+            var sb = new StringBuilder();
+            sb.AppendLine("-----BEGIN PRIVATE KEY-----");
+            sb.AppendLine(FormatBase64String(Convert.ToBase64String(der)));
+            sb.AppendLine("-----END PRIVATE KEY-----");
+            return sb.ToString().TrimEnd();
         }
 
         /// <summary>

@@ -138,6 +138,44 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
                 _logger.LogTrace($"using path prefix '{prefix}' in secret name");
                 JobParameters.StoreProperties.NamePrefix = prefix;
             }
+
+            // read the SeparatePrivateKey custom field (AWSSMPEM JSON split format)
+            JobParameters.StoreProperties.SeparatePrivateKey =
+                ReadBoolStoreProperty(storeProps.Properties, StorePropertyNames.SEPARATE_PRIVATE_KEY);
+            _logger.LogTrace($"SeparatePrivateKey = {JobParameters.StoreProperties.SeparatePrivateKey}");
+        }
+
+        /// <summary>
+        /// Reads a boolean store-type custom field from the serialized Properties JSON.
+        /// Tolerant of Command serializing the value as a real bool, a "true"/"false" string,
+        /// or an object wrapping the value (e.g. { "value": "true" }).  Defaults to false.
+        /// </summary>
+        private bool ReadBoolStoreProperty(string propertiesJson, string name)
+        {
+            if (string.IsNullOrWhiteSpace(propertiesJson)) return false;
+
+            try
+            {
+                var jObj = JObject.Parse(propertiesJson);
+                if (!jObj.TryGetValue(name, StringComparison.OrdinalIgnoreCase, out var token) || token == null)
+                    return false;
+
+                if (token.Type == JTokenType.Object)
+                    token = token["value"];
+
+                if (token == null || token.Type == JTokenType.Null)
+                    return false;
+
+                if (token.Type == JTokenType.Boolean)
+                    return token.Value<bool>();
+
+                return bool.TryParse(token.ToString(), out var parsed) && parsed;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning($"unable to parse store property '{name}'; defaulting to false. {ex.Message}");
+                return false;
+            }
         }
 
         private void InitializeAwsClient(CertificateStore storeProps)

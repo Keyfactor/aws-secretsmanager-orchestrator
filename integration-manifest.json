@@ -31,6 +31,16 @@
           },
           "Properties": [
             {
+              "Name": "SeparatePrivateKey",
+              "DisplayName": "Store as JSON with separate private key",
+              "Type": "Bool",
+              "DependsOn": "",
+              "DefaultValue": "false",
+              "Required": false,
+              "IsPAMEligible": false,
+              "Description": "When enabled, the certificate is stored as a JSON document with separate 'certificate' (PEM certificate and chain, leaf first) and 'private_key' (PEM) properties, rather than a single concatenated PEM string."
+            },
+            {
               "Name": "UseDefaultSdkAuth",
               "DisplayName": "Use Default SDK Auth",
               "Type": "Bool",
