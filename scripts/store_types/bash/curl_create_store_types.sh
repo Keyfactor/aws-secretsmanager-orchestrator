@@ -207,7 +207,7 @@ create_store_type "AWSSMPEM" '{
     {
       "Name": "CertificateTags",
       "DisplayName": "Certificate Tags",
-      "Description": "If desired, tags can be applied to the certificate entries in AWS Secrets Manager.  Provide them as a JSON string of key-value pairs ie: '{'tag-name': 'tag-content', 'other-tag-name': 'other-tag-content'}'",
+      "Description": "If desired, tags can be applied to the certificate entries in AWS Secrets Manager.  Provide them as a JSON string of key-value pairs ie: '{'tag-name': 'tag-content', 'other-tag-name': 'other-tag-content'}'.  Tag values may contain the placeholder tokens %SERIAL_NUMBER%, %NOT_BEFORE%, and %NOT_AFTER%, which are replaced with the certificate's serial number (hexadecimal) and validity dates (ISO-8601 UTC) before the tag is written.",
       "Type": "string",
       "RequiredWhen": {
         "HasPrivateKey": false,
@@ -376,7 +376,7 @@ create_store_type "AWSSMPFX" '{
     {
       "Name": "CertificateTags",
       "DisplayName": "Certificate Tags",
-      "Description": "If desired, tags can be applied to the certificate entries in AWS Secrets Manager.  Provide them as a JSON string of key-value pairs ie: '{'tag-name': 'tag-content', 'other-tag-name': 'other-tag-content'}'",
+      "Description": "If desired, tags can be applied to the certificate entries in AWS Secrets Manager.  Provide them as a JSON string of key-value pairs ie: '{'tag-name': 'tag-content', 'other-tag-name': 'other-tag-content'}'.  Tag values may contain the placeholder tokens %SERIAL_NUMBER%, %NOT_BEFORE%, and %NOT_AFTER%, which are replaced with the certificate's serial number (hexadecimal) and validity dates (ISO-8601 UTC) before the tag is written.",
       "Type": "string",
       "RequiredWhen": {
         "HasPrivateKey": false,
@@ -545,7 +545,7 @@ create_store_type "AWSSMJKS" '{
     {
       "Name": "CertificateTags",
       "DisplayName": "Certificate Tags",
-      "Description": "If desired, tags can be applied to the certificate entries in AWS Secrets Manager.  Provide them as a JSON string of key-value pairs ie: '{'tag-name': 'tag-content', 'other-tag-name': 'other-tag-content'}'",
+      "Description": "If desired, tags can be applied to the certificate entries in AWS Secrets Manager.  Provide them as a JSON string of key-value pairs ie: '{'tag-name': 'tag-content', 'other-tag-name': 'other-tag-content'}'.  Tag values may contain the placeholder tokens %SERIAL_NUMBER%, %NOT_BEFORE%, and %NOT_AFTER%, which are replaced with the certificate's serial number (hexadecimal) and validity dates (ISO-8601 UTC) before the tag is written.",
       "Type": "string",
       "RequiredWhen": {
         "HasPrivateKey": false,
