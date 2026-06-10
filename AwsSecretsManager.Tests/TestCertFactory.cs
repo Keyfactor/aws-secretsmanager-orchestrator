@@ -35,6 +35,20 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Tests
         }
 
         /// <summary>
+        /// Creates a self-signed RSA PFX and returns it along with the certificate's serial number
+        /// and validity window (UTC), so tests can assert placeholder-token resolution.
+        /// </summary>
+        public static (string pfxBase64, string serialNumber, DateTime notBeforeUtc, DateTime notAfterUtc)
+            CreateRsaPfxWithDetails(string subject = "CN=token-test")
+        {
+            using var rsa = RSA.Create(2048);
+            var req = new CertificateRequest(subject, rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+            using var cert = req.CreateSelfSigned(DateTimeOffset.UtcNow.AddDays(-1), DateTimeOffset.UtcNow.AddYears(1));
+            var pfx = Convert.ToBase64String(cert.Export(X509ContentType.Pfx, Password));
+            return (pfx, cert.SerialNumber, cert.NotBefore.ToUniversalTime(), cert.NotAfter.ToUniversalTime());
+        }
+
+        /// <summary>
         /// Creates a PFX containing a leaf certificate (with private key) signed by a root CA,
         /// plus the root certificate, so the chain can be exercised. Outputs the exact subject
         /// strings for ordering assertions.

@@ -7,6 +7,7 @@
 //  and limitations under the License.
 
 using System;
+using System.Globalization;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Cryptography;
 using System.Text;
@@ -235,6 +236,76 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
             sb.AppendLine(FormatBase64String(Convert.ToBase64String(der)));
             sb.AppendLine("-----END PRIVATE KEY-----");
             return sb.ToString().TrimEnd();
+        }
+
+        /// <summary>
+        /// Evaluates the CertificateTags placeholder tokens against the leaf certificate of a PFX.
+        /// Returns a token-to-value map: serial number as the certificate's hexadecimal serial,
+        /// and validity dates as ISO-8601 UTC (yyyy-MM-ddTHH:mm:ssZ).
+        /// </summary>
+        public static IReadOnlyDictionary<string, string> GetCertificateTagTokenValues(string base64Pfx, string password)
+        {
+            if (string.IsNullOrEmpty(base64Pfx))
+                throw new ArgumentException("Base64 PFX string cannot be null or empty", nameof(base64Pfx));
+
+            byte[] pfxBytes;
+            try
+            {
+                pfxBytes = Convert.FromBase64String(base64Pfx);
+            }
+            catch (FormatException ex)
+            {
+                throw new ArgumentException("Invalid base64 string format", nameof(base64Pfx), ex);
+            }
+
+            var collection = new X509Certificate2Collection();
+            collection.Import(pfxBytes, password, X509KeyStorageFlags.EphemeralKeySet);
+            try
+            {
+                var all = collection.Cast<X509Certificate2>().ToList();
+                var leaf = all.FirstOrDefault(c => c.HasPrivateKey) ?? all.FirstOrDefault();
+                if (leaf == null)
+                    throw new InvalidOperationException("No certificates found in PFX");
+
+                return new Dictionary<string, string>
+                {
+                    [CertificateTagTokens.SERIAL_NUMBER] = leaf.SerialNumber,
+                    [CertificateTagTokens.NOT_BEFORE] = leaf.NotBefore.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture),
+                    [CertificateTagTokens.NOT_AFTER] = leaf.NotAfter.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture),
+                };
+            }
+            finally
+            {
+                foreach (var cert in collection)
+                {
+                    cert.Dispose();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Returns a copy of the tag dictionary with every occurrence of each token (in the tag
+        /// VALUES only) replaced by its evaluated value. Tag keys are left untouched.
+        /// </summary>
+        public static Dictionary<string, string> ApplyTagTokens(
+            IReadOnlyDictionary<string, string> tags, IReadOnlyDictionary<string, string> tokenValues)
+        {
+            var result = new Dictionary<string, string>();
+            if (tags == null) return result;
+
+            foreach (var kvp in tags)
+            {
+                var value = kvp.Value;
+                if (!string.IsNullOrEmpty(value) && tokenValues != null)
+                {
+                    foreach (var token in tokenValues)
+                    {
+                        value = value.Replace(token.Key, token.Value);
+                    }
+                }
+                result[kvp.Key] = value;
+            }
+            return result;
         }
 
         /// <summary>
