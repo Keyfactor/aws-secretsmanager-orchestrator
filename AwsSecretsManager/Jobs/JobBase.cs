@@ -138,6 +138,44 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
                 _logger.LogTrace($"using path prefix '{prefix}' in secret name");
                 JobParameters.StoreProperties.NamePrefix = prefix;
             }
+
+            // read the SeparatePrivateKey custom field (AWSSMPEM JSON split format)
+            JobParameters.StoreProperties.SeparatePrivateKey =
+                ReadBoolStoreProperty(storeProps.Properties, StorePropertyNames.SEPARATE_PRIVATE_KEY);
+            _logger.LogTrace($"SeparatePrivateKey = {JobParameters.StoreProperties.SeparatePrivateKey}");
+        }
+
+        /// <summary>
+        /// Reads a boolean store-type custom field from the serialized Properties JSON.
+        /// Tolerant of Command serializing the value as a real bool, a "true"/"false" string,
+        /// or an object wrapping the value (e.g. { "value": "true" }).  Defaults to false.
+        /// </summary>
+        private bool ReadBoolStoreProperty(string propertiesJson, string name)
+        {
+            if (string.IsNullOrWhiteSpace(propertiesJson)) return false;
+
+            try
+            {
+                var jObj = JObject.Parse(propertiesJson);
+                if (!jObj.TryGetValue(name, StringComparison.OrdinalIgnoreCase, out var token) || token == null)
+                    return false;
+
+                if (token.Type == JTokenType.Object)
+                    token = token["value"];
+
+                if (token == null || token.Type == JTokenType.Null)
+                    return false;
+
+                if (token.Type == JTokenType.Boolean)
+                    return token.Value<bool>();
+
+                return bool.TryParse(token.ToString(), out var parsed) && parsed;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning($"unable to parse store property '{name}'; defaulting to false. {ex.Message}");
+                return false;
+            }
         }
 
         private void InitializeAwsClient(CertificateStore storeProps)
@@ -188,9 +226,21 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
             if (jobProperties.ContainsKey(EntryParameterKeys.TAGS) && !string.IsNullOrEmpty(jobProperties[EntryParameterKeys.TAGS] as string))
             {
                 var tagsJSON = jobProperties[EntryParameterKeys.TAGS]?.ToString();
-                var jObj = JObject.Parse(tagsJSON);
-                var tagDict = new Dictionary<string, string>();
 
+                JObject jObj;
+                try
+                {
+                    jObj = JObject.Parse(tagsJSON);
+                }
+                catch (JsonException ex)
+                {
+                    _logger.LogError($"the CertificateTags value is not valid JSON: {ex.Message}");
+                    throw new InvalidOperationException(
+                        $"The CertificateTags entry parameter is not valid JSON: {ex.Message} " +
+                        "Provide a JSON object of key-value pairs, for example {\"name\":\"value\"}.", ex);
+                }
+
+                var tagDict = new Dictionary<string, string>();
 
                 foreach (var tag in jObj)
                 {
@@ -209,7 +259,19 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
                 var replicaRegionsJSON = jobProperties[EntryParameterKeys.REPLICAREGIONS]?.ToString();
                 _logger.LogTrace($"getting replica region values, if any, from the JSON string '{replicaRegionsJSON}'");
 
-                var jObj = JObject.Parse(replicaRegionsJSON);
+                JObject jObj;
+                try
+                {
+                    jObj = JObject.Parse(replicaRegionsJSON);
+                }
+                catch (JsonException ex)
+                {
+                    _logger.LogError($"the ReplicaRegions value is not valid JSON: {ex.Message}");
+                    throw new InvalidOperationException(
+                        $"The ReplicaRegions entry parameter is not valid JSON: {ex.Message} " +
+                        "Provide a valid JSON object.", ex);
+                }
+
                 JobParameters.CertProperties.ReplicaRegions = new List<ReplicaRegionType>();
 
                 foreach (var replicaRegion in jObj)
@@ -230,7 +292,37 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
             JobParameters.CertProperties.Contents = certProperties.Contents;
             JobParameters.CertProperties.Description = jobProperties.ContainsKey("Description") ? jobProperties["Description"].ToString() : null;
 
+            ResolveCertificateTagPlaceholders();
+
             _logger.MethodExit();
+        }
+
+        /// <summary>
+        /// Replaces placeholder tokens (%SERIAL_NUMBER%, %NOT_BEFORE%, %NOT_AFTER%) found in the
+        /// CertificateTags values with values evaluated from the certificate being stored.
+        /// Applies to every store type. No-op when there are no tags, no certificate contents,
+        /// or no tokens present. Resolution failures are logged and leave the tags unchanged.
+        /// </summary>
+        private void ResolveCertificateTagPlaceholders()
+        {
+            var tags = JobParameters.CertProperties.Tags;
+            if (tags == null || tags.Count == 0) return;
+            if (string.IsNullOrEmpty(JobParameters.CertProperties.Contents)) return;
+            if (!CertificateTagTokens.ContainsAnyToken(tags.Values)) return;
+
+            try
+            {
+                var tokenValues = CertUtilities.GetCertificateTagTokenValues(
+                    JobParameters.CertProperties.Contents,
+                    JobParameters.CertProperties.PrivateKeyPassword);
+
+                JobParameters.CertProperties.Tags = CertUtilities.ApplyTagTokens(tags, tokenValues);
+                _logger.LogTrace("resolved certificate tag placeholder tokens");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning($"unable to resolve certificate tag placeholders; tags will be written as provided. {ex.Message}");
+            }
         }
 
         private protected JobResult SuccessJobResult(string message = null)

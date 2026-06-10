@@ -20,6 +20,22 @@ For this certificate store type, the certificates are expected to be stored as a
 When enrolling a certificate from Keyfactor Command into the Certificate Store with this type (AWSSMPEM), it will be stored as a PEM
 formatted string, including the private key, with no seperate password.
 
+##### Storing the certificate and private key as separate JSON properties
+
+The AWSSMPEM store type includes an optional `SeparatePrivateKey` custom field. When it is enabled, certificates added to the store are written not as a single concatenated PEM string, but as a JSON document with two properties:
+
+```json
+{
+  "certificate": "<PEM leaf certificate followed by the issuer chain, leaf first>",
+  "private_key": "<PEM private key (PKCS#8)>"
+}
+```
+
+This is useful for downstream consumers that expect the certificate (with its chain) and the private key as discrete fields. A few things to note:
+- The `certificate` property contains the leaf certificate followed by the rest of the chain, in leaf-first order.
+- The `private_key` property contains the unencrypted PKCS#8 private key (`-----BEGIN PRIVATE KEY-----`). AWS Secrets Manager encrypts secret values at rest, but unlike the password-protected PFX/JKS formats there is no separate store password protecting the key material itself.
+- Inventory tolerates both the JSON and the plain-PEM format, so an existing store can be migrated by enabling the option and allowing its certificates to be re-added or renewed over time.
+
 ---
 
 #### Configuring the Certificate Store

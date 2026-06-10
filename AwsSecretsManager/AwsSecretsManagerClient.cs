@@ -13,6 +13,7 @@ using Keyfactor.Extensions.Aws.Models;
 using Keyfactor.Extensions.Orchestrators.AwsSecretsManager.models;
 using Keyfactor.Logging;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -285,7 +286,9 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
             switch (jobParameters.StoreType)
             {
                 case "AWSSMPEM":
-                    req = GenerateAddSecretPemRequest(jobParameters);
+                    req = jobParameters.StoreProperties.SeparatePrivateKey
+                        ? GenerateAddSecretPemJsonRequest(jobParameters)
+                        : GenerateAddSecretPemRequest(jobParameters);
                     break;
                 case "AWSSMPFX":
                     (req, pwdReq) = GenerateAddSecretPfxRequest(jobParameters);
@@ -449,6 +452,53 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
         }
 
         /// <summary>
+        /// Generates a request to write the certificate as a JSON document with separate
+        /// "certificate" (PEM cert + chain) and "private_key" (PEM) properties.
+        /// Used for AWSSMPEM stores that have the SeparatePrivateKey option enabled.
+        /// </summary>
+        private CreateSecretRequest GenerateAddSecretPemJsonRequest(AwsSecretsManagerJobParameters jobParameters)
+        {
+            _logger.MethodEntry();
+            var req = new CreateSecretRequest { Name = jobParameters.SecretName };
+            req.SecretString = BuildPemJsonSecretString(jobParameters);
+            _logger.MethodExit();
+            return req;
+        }
+
+        private UpdateSecretRequest GenerateUpdateSecretPemJsonRequest(AwsSecretsManagerJobParameters jobParameters)
+        {
+            _logger.MethodEntry();
+            var req = new UpdateSecretRequest { SecretId = jobParameters.SecretName };
+            req.SecretString = BuildPemJsonSecretString(jobParameters);
+            _logger.MethodExit();
+            return req;
+        }
+
+        /// <summary>
+        /// Builds the serialized JSON secret value ({ "certificate": ..., "private_key": ... })
+        /// from the base64-encoded PFX contents.  Newtonsoft handles escaping of the embedded
+        /// PEM newlines, so no manual escaping is performed here.
+        /// </summary>
+        private string BuildPemJsonSecretString(AwsSecretsManagerJobParameters jobParameters)
+        {
+            string certificatePem;
+            string privateKeyPem;
+            try
+            {
+                (certificatePem, privateKeyPem) = CertUtilities.ConvertPfxToCertAndKeyPem(
+                    jobParameters.CertProperties.Contents, jobParameters.CertProperties.PrivateKeyPassword);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Conversion failed: unable to convert certificate contents to the separate-key PEM JSON format\n{ex.Message}");
+                throw;
+            }
+
+            var pemSecret = new PemSecret { Certificate = certificatePem, PrivateKey = privateKeyPem };
+            return JsonConvert.SerializeObject(pemSecret);
+        }
+
+        /// <summary>
         /// Update existing secret with a new version
         /// then apply tags and replica regions from entry parameters.
         /// </summary>
@@ -467,7 +517,9 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
             switch (jobParameters.StoreType)
             {
                 case "AWSSMPEM":
-                    updateCertReq = GenerateUpdateSecretPemRequest(jobParameters);
+                    updateCertReq = jobParameters.StoreProperties.SeparatePrivateKey
+                        ? GenerateUpdateSecretPemJsonRequest(jobParameters)
+                        : GenerateUpdateSecretPemRequest(jobParameters);
                     break;
                 case "AWSSMPFX":
                     (updateCertReq, updatePwReq) = GenerateUpdateSecretPfxRequest(jobParameters);
