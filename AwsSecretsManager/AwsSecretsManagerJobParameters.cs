@@ -45,6 +45,10 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
         public string TagValue { get; set; } // The value of the tag to use to identify certs that should be managed by this cert store; from StorePath
         public bool UseTags => !string.IsNullOrEmpty(TagName);
         public bool UsePrefix => !string.IsNullOrEmpty(NamePrefix);
+
+        // When true (AWSSMPEM only), the secret value is written as a JSON document with
+        // separate "certificate" (PEM cert + chain, leaf first) and "private_key" (PEM) properties.
+        public bool SeparatePrivateKey { get; set; }
     }
 
     public class CertProperties
