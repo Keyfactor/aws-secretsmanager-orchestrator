@@ -114,6 +114,26 @@ Additionally, the certificate store in Command can be configured to filter the s
 
 Additional details of how to configure these in Keyfactor Command can be found in the documentation for that store type ([AWSSMPEM](./awssmpem.md), [AWSSMPFX](./awssmpfx.md), [AWSSMJKS](./awssmpfx.md)).
 
+### Certificate tag placeholders
+
+When supplying the optional `CertificateTags` entry parameter during enrollment, tag values may include placeholder tokens that are replaced with values evaluated from the certificate before the tags are written to AWS Secrets Manager:
+
+| Token | Replaced with |
+| :---- | :------------ |
+| `%SERIAL_NUMBER%` | The certificate serial number (hexadecimal). |
+| `%NOT_BEFORE%` | The start of the validity period, as an ISO-8601 UTC timestamp (`yyyy-MM-ddTHH:mm:ssZ`). |
+| `%NOT_AFTER%` | The end of the validity period, as an ISO-8601 UTC timestamp (`yyyy-MM-ddTHH:mm:ssZ`). |
+
+For example, providing this `CertificateTags` value during enrollment:
+
+```json
+{"serial": "%SERIAL_NUMBER%", "expires": "%NOT_AFTER%"}
+```
+
+would write two tags on the certificate secret: `serial` containing the certificate's serial number, and `expires` containing its expiration date. Only the tag values are substituted; tag names are left as-is. This applies to all three store types.
+
+If the `CertificateTags` value is not valid JSON, the enrollment job fails with an error identifying the `CertificateTags` parameter, rather than a generic parse error.
+
 
 ## Certificate Store Types
 
@@ -148,6 +168,22 @@ For this certificate store type, the certificates are expected to be stored as a
 
 When enrolling a certificate from Keyfactor Command into the Certificate Store with this type (AWSSMPEM), it will be stored as a PEM
 formatted string, including the private key, with no seperate password.
+
+###### Storing the certificate and private key as separate JSON properties
+
+The AWSSMPEM store type includes an optional `SeparatePrivateKey` custom field. When it is enabled, certificates added to the store are written not as a single concatenated PEM string, but as a JSON document with two properties:
+
+```json
+{
+  "certificate": "<PEM leaf certificate followed by the issuer chain, leaf first>",
+  "private_key": "<PEM private key (PKCS#8)>"
+}
+```
+
+This is useful for downstream consumers that expect the certificate (with its chain) and the private key as discrete fields. A few things to note:
+- The `certificate` property contains the leaf certificate followed by the rest of the chain, in leaf-first order.
+- The `private_key` property contains the unencrypted PKCS#8 private key (`-----BEGIN PRIVATE KEY-----`). AWS Secrets Manager encrypts secret values at rest, but unlike the password-protected PFX/JKS formats there is no separate store password protecting the key material itself.
+- Inventory tolerates both the JSON and the plain-PEM format, so an existing store can be migrated by enabling the option and allowing its certificates to be re-added or renewed over time.
 
 ---
 
@@ -253,6 +289,7 @@ the Keyfactor Command Portal
 
    | Name | Display Name | Description | Type | Default Value/Options | Required |
    | ---- | ------------ | ---- | --------------------- | -------- | ----------- |
+   | SeparatePrivateKey | Store as JSON with separate private key | When enabled, the certificate is stored as a JSON document with separate 'certificate' (PEM certificate and chain, leaf first) and 'private_key' (PEM) properties, rather than a single concatenated PEM string. | Bool | false | 🔲 Unchecked |
    | UseDefaultSdkAuth | Use Default SDK Auth | A switch to enable the store to use Default SDK credentials | Bool | false | ✅ Checked |
    | DefaultSdkAssumeRole | Assume new Role using Default SDK Auth | A switch to enable the store to assume a new Role when using Default SDK credentials | Bool | false | 🔲 Unchecked |
    | UseOAuth | Use OAuth 2.0 Provider | A switch to enable the store to use an OAuth provider workflow to authenticate with AWS | Bool | false | ✅ Checked |
@@ -269,6 +306,14 @@ the Keyfactor Command Portal
    The Custom Fields tab should look like this:
 
    ![AWSSMPEM Custom Fields Tab](docsource/images/AWSSMPEM-custom-fields-store-type-dialog.png)
+
+
+   ###### Store as JSON with separate private key
+   When enabled, the certificate is stored as a JSON document with separate 'certificate' (PEM certificate and chain, leaf first) and 'private_key' (PEM) properties, rather than a single concatenated PEM string.
+
+   ![AWSSMPEM Custom Field - SeparatePrivateKey](docsource/images/AWSSMPEM-custom-field-SeparatePrivateKey-dialog.png)
+   ![AWSSMPEM Custom Field - SeparatePrivateKey](docsource/images/AWSSMPEM-custom-field-SeparatePrivateKey-validation-options-dialog.png)
+
 
 
    ###### Use Default SDK Auth
@@ -373,7 +418,7 @@ the Keyfactor Command Portal
 
    | Name | Display Name | Description | Type | Default Value | Entry has a private key | Adding an entry | Removing an entry | Reenrolling an entry |
    | ---- | ------------ | ---- | ------------- | ----------------------- | ---------------- | ----------------- | ------------------- | ----------- |
-   | CertificateTags | Certificate Tags | If desired, tags can be applied to the certificate entries in AWS Secrets Manager.  Provide them as a JSON string of key-value pairs ie: '{'tag-name': 'tag-content', 'other-tag-name': 'other-tag-content'}' | string |  | 🔲 Unchecked | 🔲 Unchecked | 🔲 Unchecked | 🔲 Unchecked |
+   | CertificateTags | Certificate Tags | If desired, tags can be applied to the certificate entries in AWS Secrets Manager.  Provide them as a JSON string of key-value pairs ie: '{'tag-name': 'tag-content', 'other-tag-name': 'other-tag-content'}'.  Tag values may contain the placeholder tokens %SERIAL_NUMBER%, %NOT_BEFORE%, and %NOT_AFTER%, which are replaced with the certificate's serial number (hexadecimal) and validity dates (ISO-8601 UTC) before the tag is written. | string |  | 🔲 Unchecked | 🔲 Unchecked | 🔲 Unchecked | 🔲 Unchecked |
    | ReplicaRegions | Replica Regions | To replicate secrets to other regions, you can provide them here as a JSON array in the format: [{ 'KmsKeyId': '<optionally specify the encryption key ID', 'Region': '<region name>'}, {...}] | string |  | 🔲 Unchecked | 🔲 Unchecked | 🔲 Unchecked | 🔲 Unchecked |
 
    The Entry Parameters tab should look like this:
@@ -382,7 +427,7 @@ the Keyfactor Command Portal
 
 
    ##### Certificate Tags
-   If desired, tags can be applied to the certificate entries in AWS Secrets Manager.  Provide them as a JSON string of key-value pairs ie: '{'tag-name': 'tag-content', 'other-tag-name': 'other-tag-content'}'
+   If desired, tags can be applied to the certificate entries in AWS Secrets Manager.  Provide them as a JSON string of key-value pairs ie: '{'tag-name': 'tag-content', 'other-tag-name': 'other-tag-content'}'.  Tag values may contain the placeholder tokens %SERIAL_NUMBER%, %NOT_BEFORE%, and %NOT_AFTER%, which are replaced with the certificate's serial number (hexadecimal) and validity dates (ISO-8601 UTC) before the tag is written.
 
    ![AWSSMPEM Entry Parameter - CertificateTags](docsource/images/AWSSMPEM-entry-parameters-store-type-dialog-CertificateTags.png)
    ![AWSSMPEM Entry Parameter - CertificateTags](docsource/images/AWSSMPEM-entry-parameters-store-type-dialog-CertificateTags-validation-options.png)
@@ -689,7 +734,7 @@ the Keyfactor Command Portal
 
    | Name | Display Name | Description | Type | Default Value | Entry has a private key | Adding an entry | Removing an entry | Reenrolling an entry |
    | ---- | ------------ | ---- | ------------- | ----------------------- | ---------------- | ----------------- | ------------------- | ----------- |
-   | CertificateTags | Certificate Tags | If desired, tags can be applied to the certificate entries in AWS Secrets Manager.  Provide them as a JSON string of key-value pairs ie: '{'tag-name': 'tag-content', 'other-tag-name': 'other-tag-content'}' | string |  | 🔲 Unchecked | 🔲 Unchecked | 🔲 Unchecked | 🔲 Unchecked |
+   | CertificateTags | Certificate Tags | If desired, tags can be applied to the certificate entries in AWS Secrets Manager.  Provide them as a JSON string of key-value pairs ie: '{'tag-name': 'tag-content', 'other-tag-name': 'other-tag-content'}'.  Tag values may contain the placeholder tokens %SERIAL_NUMBER%, %NOT_BEFORE%, and %NOT_AFTER%, which are replaced with the certificate's serial number (hexadecimal) and validity dates (ISO-8601 UTC) before the tag is written. | string |  | 🔲 Unchecked | 🔲 Unchecked | 🔲 Unchecked | 🔲 Unchecked |
    | ReplicaRegions | Replica Regions | To replicate secrets to other regions, you can provide them here as a JSON array in the format: [{ 'KmsKeyId': '<optionally specify the encryption key ID', 'Region': '<region name>'}, {...}] | string |  | 🔲 Unchecked | 🔲 Unchecked | 🔲 Unchecked | 🔲 Unchecked |
 
    The Entry Parameters tab should look like this:
@@ -698,7 +743,7 @@ the Keyfactor Command Portal
 
 
    ##### Certificate Tags
-   If desired, tags can be applied to the certificate entries in AWS Secrets Manager.  Provide them as a JSON string of key-value pairs ie: '{'tag-name': 'tag-content', 'other-tag-name': 'other-tag-content'}'
+   If desired, tags can be applied to the certificate entries in AWS Secrets Manager.  Provide them as a JSON string of key-value pairs ie: '{'tag-name': 'tag-content', 'other-tag-name': 'other-tag-content'}'.  Tag values may contain the placeholder tokens %SERIAL_NUMBER%, %NOT_BEFORE%, and %NOT_AFTER%, which are replaced with the certificate's serial number (hexadecimal) and validity dates (ISO-8601 UTC) before the tag is written.
 
    ![AWSSMPFX Entry Parameter - CertificateTags](docsource/images/AWSSMPFX-entry-parameters-store-type-dialog-CertificateTags.png)
    ![AWSSMPFX Entry Parameter - CertificateTags](docsource/images/AWSSMPFX-entry-parameters-store-type-dialog-CertificateTags-validation-options.png)
@@ -1005,7 +1050,7 @@ the Keyfactor Command Portal
 
    | Name | Display Name | Description | Type | Default Value | Entry has a private key | Adding an entry | Removing an entry | Reenrolling an entry |
    | ---- | ------------ | ---- | ------------- | ----------------------- | ---------------- | ----------------- | ------------------- | ----------- |
-   | CertificateTags | Certificate Tags | If desired, tags can be applied to the certificate entries in AWS Secrets Manager.  Provide them as a JSON string of key-value pairs ie: '{'tag-name': 'tag-content', 'other-tag-name': 'other-tag-content'}' | string |  | 🔲 Unchecked | 🔲 Unchecked | 🔲 Unchecked | 🔲 Unchecked |
+   | CertificateTags | Certificate Tags | If desired, tags can be applied to the certificate entries in AWS Secrets Manager.  Provide them as a JSON string of key-value pairs ie: '{'tag-name': 'tag-content', 'other-tag-name': 'other-tag-content'}'.  Tag values may contain the placeholder tokens %SERIAL_NUMBER%, %NOT_BEFORE%, and %NOT_AFTER%, which are replaced with the certificate's serial number (hexadecimal) and validity dates (ISO-8601 UTC) before the tag is written. | string |  | 🔲 Unchecked | 🔲 Unchecked | 🔲 Unchecked | 🔲 Unchecked |
    | ReplicaRegions | Replica Regions | To replicate secrets to other regions, you can provide them here as a JSON array in the format: [{ 'KmsKeyId': '<optionally specify the encryption key ID', 'Region': '<region name>'}, {...}] | string |  | 🔲 Unchecked | 🔲 Unchecked | 🔲 Unchecked | 🔲 Unchecked |
 
    The Entry Parameters tab should look like this:
@@ -1014,7 +1059,7 @@ the Keyfactor Command Portal
 
 
    ##### Certificate Tags
-   If desired, tags can be applied to the certificate entries in AWS Secrets Manager.  Provide them as a JSON string of key-value pairs ie: '{'tag-name': 'tag-content', 'other-tag-name': 'other-tag-content'}'
+   If desired, tags can be applied to the certificate entries in AWS Secrets Manager.  Provide them as a JSON string of key-value pairs ie: '{'tag-name': 'tag-content', 'other-tag-name': 'other-tag-content'}'.  Tag values may contain the placeholder tokens %SERIAL_NUMBER%, %NOT_BEFORE%, and %NOT_AFTER%, which are replaced with the certificate's serial number (hexadecimal) and validity dates (ISO-8601 UTC) before the tag is written.
 
    ![AWSSMJKS Entry Parameter - CertificateTags](docsource/images/AWSSMJKS-entry-parameters-store-type-dialog-CertificateTags.png)
    ![AWSSMJKS Entry Parameter - CertificateTags](docsource/images/AWSSMJKS-entry-parameters-store-type-dialog-CertificateTags-validation-options.png)
@@ -1105,6 +1150,7 @@ The AWS Secrets Manager Universal Orchestrator extension implements 3 Certificat
    | Client Machine |  |
    | Store Path | The store path contains the AWS region where the SecretsManager resides.  It can optionally accept values for tags OR path prefix for identifying secrets to be managed by the cert store instance.  example:'us-east-2 [prefix='dev/midwest']' or 'us-east1 [tagName='managedBy' tagValue='keyfactor']'  |
    | Orchestrator | Select an approved orchestrator capable of managing `AWSSMPEM` certificates. Specifically, one with the `AWSSMPEM` capability. |
+   | SeparatePrivateKey | When enabled, the certificate is stored as a JSON document with separate 'certificate' (PEM certificate and chain, leaf first) and 'private_key' (PEM) properties, rather than a single concatenated PEM string. |
    | UseDefaultSdkAuth | A switch to enable the store to use Default SDK credentials |
    | DefaultSdkAssumeRole | A switch to enable the store to assume a new Role when using Default SDK credentials |
    | UseOAuth | A switch to enable the store to use an OAuth provider workflow to authenticate with AWS |
@@ -1142,6 +1188,7 @@ The AWS Secrets Manager Universal Orchestrator extension implements 3 Certificat
    | Client Machine |  |
    | Store Path | The store path contains the AWS region where the SecretsManager resides.  It can optionally accept values for tags OR path prefix for identifying secrets to be managed by the cert store instance.  example:'us-east-2 [prefix='dev/midwest']' or 'us-east1 [tagName='managedBy' tagValue='keyfactor']'  |
    | Orchestrator | Select an approved orchestrator capable of managing `AWSSMPEM` certificates. Specifically, one with the `AWSSMPEM` capability. |
+   | Properties.SeparatePrivateKey | When enabled, the certificate is stored as a JSON document with separate 'certificate' (PEM certificate and chain, leaf first) and 'private_key' (PEM) properties, rather than a single concatenated PEM string. |
    | Properties.UseDefaultSdkAuth | A switch to enable the store to use Default SDK credentials |
    | Properties.DefaultSdkAssumeRole | A switch to enable the store to assume a new Role when using Default SDK credentials |
    | Properties.UseOAuth | A switch to enable the store to use an OAuth provider workflow to authenticate with AWS |

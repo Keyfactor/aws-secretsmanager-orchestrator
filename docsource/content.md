@@ -60,3 +60,23 @@ To include only include the first two: <b>[prefix="org-name/dev-env/"]</b> in th
 Additionally, the certificate store in Command can be configured to filter the secrets to be managed by the presence of a specific Tag Name and optional Tag value.
 
 Additional details of how to configure these in Keyfactor Command can be found in the documentation for that store type ([AWSSMPEM](./awssmpem.md), [AWSSMPFX](./awssmpfx.md), [AWSSMJKS](./awssmpfx.md)).
+
+### Certificate tag placeholders
+
+When supplying the optional `CertificateTags` entry parameter during enrollment, tag values may include placeholder tokens that are replaced with values evaluated from the certificate before the tags are written to AWS Secrets Manager:
+
+| Token | Replaced with |
+| :---- | :------------ |
+| `%SERIAL_NUMBER%` | The certificate serial number (hexadecimal). |
+| `%NOT_BEFORE%` | The start of the validity period, as an ISO-8601 UTC timestamp (`yyyy-MM-ddTHH:mm:ssZ`). |
+| `%NOT_AFTER%` | The end of the validity period, as an ISO-8601 UTC timestamp (`yyyy-MM-ddTHH:mm:ssZ`). |
+
+For example, providing this `CertificateTags` value during enrollment:
+
+```json
+{"serial": "%SERIAL_NUMBER%", "expires": "%NOT_AFTER%"}
+```
+
+would write two tags on the certificate secret: `serial` containing the certificate's serial number, and `expires` containing its expiration date. Only the tag values are substituted; tag names are left as-is. This applies to all three store types.
+
+If the `CertificateTags` value is not valid JSON, the enrollment job fails with an error identifying the `CertificateTags` parameter, rather than a generic parse error.
