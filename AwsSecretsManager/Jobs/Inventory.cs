@@ -416,16 +416,25 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
 
                 try
                 {
-                    // for AWSSMPEM, they will be stored as a secret string in PEM format.
-                    var secretString = potentialCert.SecretString;
+                    // for AWSSMPEM, the secret string is PEM.  When the SeparatePrivateKey
+                    // option is used, the value is instead a JSON document with "certificate"
+                    // and "private_key" properties.  Inventory tolerates BOTH formats so a
+                    // format mismatch never drops an entry from the returned set.
+                    var pemContent = potentialCert.SecretString;
+
+                    if (TryParsePemSecretJson(potentialCert.SecretString, out var pemSecret))
+                    {
+                        _logger.LogTrace($"secret {potentialCert.Name} is in the separate-key JSON format; reconstructing PEM for parsing.");
+                        pemContent = pemSecret.ToCombinedPem();
+                    }
 
                     // try pemtoder
-                    var certBytes = PKI.PEM.PemUtilities.PEMToDER(potentialCert.SecretString);
+                    var certBytes = PKI.PEM.PemUtilities.PEMToDER(pemContent);
                     _logger.LogTrace("successfully tested conversion from PEM to DER");
 
                     // if it didn't throw.. convert to base64 cer format
 
-                    (encodedCerts, hasPrivateKey) = CertUtilities.ConvertPemToFullChainBase64(potentialCert.SecretString);
+                    (encodedCerts, hasPrivateKey) = CertUtilities.ConvertPemToFullChainBase64(pemContent);
 
                     _logger.LogTrace($"converted to Base64 cer format.  The chain is {(encodedCerts.Count > 1 ? "" : "not ")}included.");
 
@@ -474,6 +483,33 @@ cert contents:
 
             } // end cert evaluation loop
             return (inventoryItems, warnings);
+        }
+
+        /// <summary>
+        /// Attempts to interpret the secret string as the SeparatePrivateKey JSON format.
+        /// Returns true (with the parsed PemSecret) only when the value is a JSON object that
+        /// actually carries a "certificate" property; otherwise the value is treated as raw PEM.
+        /// </summary>
+        private bool TryParsePemSecretJson(string secretString, out PemSecret pemSecret)
+        {
+            pemSecret = null;
+            if (string.IsNullOrWhiteSpace(secretString)) return false;
+            if (!secretString.TrimStart().StartsWith("{")) return false; // cheap guard; PEM never starts with '{'
+
+            try
+            {
+                var parsed = JsonConvert.DeserializeObject<PemSecret>(secretString);
+                if (parsed != null && !string.IsNullOrWhiteSpace(parsed.Certificate))
+                {
+                    pemSecret = parsed;
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogTrace($"secret value is not the separate-key JSON format, treating as raw PEM. {ex.Message}");
+            }
+            return false;
         }
     }
 }
