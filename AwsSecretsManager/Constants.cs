@@ -20,6 +20,11 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
         // Boolean store-type custom field (AWSSMPEM) that switches the secret value to a
         // JSON document with separate "certificate" and "private_key" PEM properties.
         public const string SEPARATE_PRIVATE_KEY = "SeparatePrivateKey";
+
+        // Boolean store-type custom field (AWSSMPEM) that includes the issuer chain in the
+        // single concatenated PEM secret.  Ignored when SeparatePrivateKey is enabled, since
+        // the JSON format always includes the chain.
+        public const string INCLUDE_CHAIN = "IncludeChain";
     }
     public static class KeyfactorJobType
     {

@@ -1,3 +1,6 @@
+## 1.2.0
+* AWSSMPEM - New optional store type parameter `IncludeChain` (default false) to include the issuer chain in the single concatenated PEM secret (leaf, then chain, then private key). Ignored when `SeparatePrivateKey` is enabled, as the JSON format already includes the chain. Stores without the parameter behave as before.
+
 ## 1.1.0
 * AWSSMPEM - New optional store type parameter to indicate that the secret containing the cert and private key should use the JSON format with seperate properties for certificate and private key.
 * now support placeholders in CertificateTags for 3 certificate metadata fields:

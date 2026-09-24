@@ -143,6 +143,16 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
             JobParameters.StoreProperties.SeparatePrivateKey =
                 ReadBoolStoreProperty(storeProps.Properties, StorePropertyNames.SEPARATE_PRIVATE_KEY);
             _logger.LogTrace($"SeparatePrivateKey = {JobParameters.StoreProperties.SeparatePrivateKey}");
+
+            // read the IncludeChain custom field (AWSSMPEM single-PEM format only)
+            JobParameters.StoreProperties.IncludeChain =
+                ReadBoolStoreProperty(storeProps.Properties, StorePropertyNames.INCLUDE_CHAIN);
+            _logger.LogTrace($"IncludeChain = {JobParameters.StoreProperties.IncludeChain}");
+
+            if (JobParameters.StoreProperties.SeparatePrivateKey && JobParameters.StoreProperties.IncludeChain)
+            {
+                _logger.LogTrace("IncludeChain is ignored because SeparatePrivateKey is enabled; the JSON format always includes the chain.");
+            }
         }
 
         /// <summary>

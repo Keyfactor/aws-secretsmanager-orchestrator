@@ -20,6 +20,29 @@ For this certificate store type, the certificates are expected to be stored as a
 When enrolling a certificate from Keyfactor Command into the Certificate Store with this type (AWSSMPEM), it will be stored as a PEM
 formatted string, including the private key, with no seperate password.
 
+##### Including the certificate chain in the PEM secret
+
+By default, the concatenated PEM secret contains only the leaf certificate followed by its private key. The AWSSMPEM store type includes an optional `IncludeChain` custom field. When it is enabled, the secret contains the leaf certificate, followed by the issuer chain (leaf first), followed by the private key:
+
+```
+-----BEGIN CERTIFICATE-----
+<leaf certificate>
+-----END CERTIFICATE-----
+-----BEGIN CERTIFICATE-----
+<issuing CA certificate>
+-----END CERTIFICATE-----
+...
+-----BEGIN PRIVATE KEY-----
+<PKCS#8 private key>
+-----END PRIVATE KEY-----
+```
+
+A few things to note:
+- `IncludeChain` only applies when `SeparatePrivateKey` is disabled. The JSON format described below always includes the chain in its `certificate` property, so `IncludeChain` is ignored when `SeparatePrivateKey` is enabled.
+- The chain written is the chain delivered by Keyfactor Command with the certificate, which may include the root CA certificate.
+- The setting applies when a certificate is added or renewed. Existing secrets are not rewritten when the option is changed; they pick up the new format the next time they are added or renewed. Inventory reads both formats.
+- Existing AWSSMPEM store types created before this option was introduced do not include the field. Stores without the field behave exactly as before (leaf and key only). To use the option, add the `IncludeChain` property to the store type definition.
+
 ##### Storing the certificate and private key as separate JSON properties
 
 The AWSSMPEM store type includes an optional `SeparatePrivateKey` custom field. When it is enabled, certificates added to the store are written not as a single concatenated PEM string, but as a JSON document with two properties:

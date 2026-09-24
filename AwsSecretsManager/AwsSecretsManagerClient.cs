@@ -438,7 +438,7 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
 
             try
             {
-                pemCert = CertUtilities.ConvertPfxToPem(jobParameters.CertProperties.Contents, jobParameters.CertProperties.PrivateKeyPassword);
+                pemCert = CertUtilities.ConvertPfxToPem(jobParameters.CertProperties.Contents, jobParameters.CertProperties.PrivateKeyPassword, jobParameters.StoreProperties.IncludeChain);
             }
             catch (Exception ex)
             {
@@ -659,7 +659,7 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
             string pemCert;
             try
             {
-                pemCert = CertUtilities.ConvertPfxToPem(jobParameters.CertProperties.Contents, jobParameters.CertProperties.PrivateKeyPassword);
+                pemCert = CertUtilities.ConvertPfxToPem(jobParameters.CertProperties.Contents, jobParameters.CertProperties.PrivateKeyPassword, jobParameters.StoreProperties.IncludeChain);
             }
             catch (Exception ex)
             {
