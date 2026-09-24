@@ -1,5 +1,7 @@
 ## 1.2.0
 * AWSSMPEM - New optional store type parameter `IncludeChain` (default false) to include the issuer chain in the single concatenated PEM secret (leaf, then chain, then private key). Ignored when `SeparatePrivateKey` is enabled, as the JSON format already includes the chain. Stores without the parameter behave as before.
+* Added .NET 10 as a target framework.
+* Fixed tag handling when a certificate is renewed or overwritten: previously, if any provided tag key already existed on the secret, all existing tags were removed (including tags not managed by Keyfactor). Now only the tags with matching keys are replaced; other tags on the secret are left intact.
 * Documentation - added the `secretsmanager:BatchGetSecretValue` and `secretsmanager:DescribeSecret` IAM actions to the list of required permissions.
 * Documentation - added the conditionally required `secretsmanager:UntagResource`, `secretsmanager:ReplicateSecretToRegions`, and `secretsmanager:RemoveRegionsFromReplication` IAM actions, and corrected the formatting of the listed action names (`secretsmanager:<Action>`) so they can be used directly in an IAM policy.
 

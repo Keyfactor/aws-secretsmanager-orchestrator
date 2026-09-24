@@ -581,7 +581,7 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
 
             if (tags.Any())
             {
-                _logger.LogTrace($"tags are included, replacing existing tags with the {tags.Count} provided.");
+                _logger.LogTrace($"tags are included, applying the {tags.Count} provided (existing tags with the same keys are replaced; other tags are kept).");
                 await UpdateSecretTagsAsync(jobParameters.SecretName, tags);
             }
 
@@ -767,7 +767,8 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
                 var describeResponse = await _secretsManagerClient.DescribeSecretAsync(describeRequest);
                 var currentTags = describeResponse.Tags ?? new List<Tag>();
 
-                // Remove any existing tags with the same name
+                // Remove only the existing tags whose keys are being replaced; tags not provided
+                // by Command (e.g. added by other tooling) are left on the secret.
                 var newTagKeys = newTags.Select(t => t.Key).ToList();
 
                 var toReplace = currentTags.Where(t => newTagKeys.Any(key => key == t.Key)).Select(t => t.Key).ToList();
@@ -777,7 +778,7 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
                     var untagRequest = new UntagResourceRequest
                     {
                         SecretId = secretName,
-                        TagKeys = currentTags.Select(tag => tag.Key).ToList()
+                        TagKeys = toReplace
                     };
 
                     await _secretsManagerClient.UntagResourceAsync(untagRequest);
