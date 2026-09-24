@@ -31,6 +31,8 @@ Here is a list of the IAM actions that the authenticating identity should have i
 
 - `secretsmanager.ListSecrets`
 - `secretsManager.GetSecretValue` 
+- `secretsmanager:BatchGetSecretValue`
+- `secretsmanager:DescribeSecret`
 - `secretsmanager:CreateSecret`
 - `secretsmanager.DeleteSecret` 
 - `secretsmanager.UpdateSecret`
