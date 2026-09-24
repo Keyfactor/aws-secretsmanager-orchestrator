@@ -442,16 +442,11 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
                 }
                 catch (Exception ex)
                 {
-                    // it failed; log a warning and continue.
-                    var msg =
-        $@"Unable to perform PEM to DER conversion on secret named {potentialCert.Name}.
-cert contents:
-{{potentialCert.SecretString}}
-""Exception: {{ex.Message}}";
+                    // it failed; log a warning and continue.  The secret contents are never
+                    // logged, since for this store type they contain the unencrypted private key.
+                    var msg = $"Unable to parse the secret named {potentialCert.Name} as a PEM certificate: {ex.Message}";
 
-                    _logger.LogWarning("cert contents:");
-                    _logger.LogWarning($"\n{potentialCert.SecretString}\n");
-                    _logger.LogWarning($"Exception: {ex.Message}");
+                    _logger.LogWarning($"{msg} (secret string length: {potentialCert.SecretString?.Length ?? 0}; contents not logged)");
                     warnings.Add(msg);
                     continue;
                 }

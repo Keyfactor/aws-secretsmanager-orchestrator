@@ -76,7 +76,12 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
             }
         }
 
-        public static string ConvertPfxToPem(string base64Pfx, string password)
+        /// <summary>
+        /// Converts a base64-encoded PFX into a single concatenated PEM string: the leaf
+        /// certificate, optionally followed by the issuer chain (leaf first), then the
+        /// private key in PKCS#8 form.
+        /// </summary>
+        public static string ConvertPfxToPem(string base64Pfx, string password, bool includeChain = false)
         {
             if (string.IsNullOrEmpty(base64Pfx))
                 throw new ArgumentException("Base64 PFX string cannot be null or empty", nameof(base64Pfx));
@@ -93,12 +98,13 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
 
             try
             {
-                // Legacy PEM format: the leaf certificate followed by its private key (no chain).
+                // Default (legacy) PEM format: the leaf certificate followed by its private key.
+                // With includeChain, the issuer chain is placed between the leaf and the key.
                 // Certificates are read via .NET (public data only, no key export); the private
                 // key is exported via BouncyCastle to avoid the .NET/CNG export failure on Windows.
-                var leafPem = BuildCertPemFromPfx(pfxBytes, password, leafOnly: true);
+                var certPem = BuildCertPemFromPfx(pfxBytes, password, leafOnly: !includeChain);
                 var keyPem = GetPrivateKeyPem(pfxBytes, password);
-                return leafPem + "\n" + keyPem;
+                return certPem + "\n" + keyPem;
             }
             catch (InvalidOperationException)
             {

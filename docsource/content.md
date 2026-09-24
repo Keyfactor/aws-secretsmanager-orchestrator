@@ -29,12 +29,17 @@ the authentication credentials has access to.
 
 Here is a list of the IAM actions that the authenticating identity should have in order to perform all Jobs supported by this extension:
 
-- `secretsmanager.ListSecrets`
-- `secretsManager.GetSecretValue` 
+- `secretsmanager:ListSecrets`
+- `secretsmanager:GetSecretValue`
+- `secretsmanager:BatchGetSecretValue`
+- `secretsmanager:DescribeSecret`
 - `secretsmanager:CreateSecret`
-- `secretsmanager.DeleteSecret` 
-- `secretsmanager.UpdateSecret`
-- `secretsmanager.TagResource`  _if using tags for filtering or to add tags via entry parameters._
+- `secretsmanager:DeleteSecret`
+- `secretsmanager:UpdateSecret`
+- `secretsmanager:TagResource`  _if using tags for filtering or to add tags via entry parameters._
+- `secretsmanager:UntagResource`  _if using tags for filtering or to add tags via entry parameters; used to replace existing tags when a certificate is renewed or overwritten._
+- `secretsmanager:ReplicateSecretToRegions`  _if using the ReplicaRegions entry parameter._
+- `secretsmanager:RemoveRegionsFromReplication`  _if using the ReplicaRegions entry parameter; used to remove regions no longer listed when a certificate is renewed or overwritten._
 
 For more information on these permission actions, refer to the [AWS Documentation](https://docs.aws.amazon.com/service-authorization/latest/reference/list_awssecretsmanager.html).
 
