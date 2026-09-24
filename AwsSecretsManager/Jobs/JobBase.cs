@@ -188,11 +188,39 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
             }
         }
 
+        /// <summary>
+        /// Returns the serialized store Properties with the values of Secret-type fields replaced,
+        /// so the properties can be logged without exposing credentials.  If the JSON cannot be
+        /// parsed, nothing from it is returned.
+        /// </summary>
+        internal static string RedactSecretStoreProperties(string propertiesJson)
+        {
+            if (string.IsNullOrWhiteSpace(propertiesJson)) return propertiesJson;
+
+            try
+            {
+                var jObj = JObject.Parse(propertiesJson);
+                foreach (var prop in jObj.Properties())
+                {
+                    if (StorePropertyNames.SECRET_FIELDS.Any(f => string.Equals(f, prop.Name, StringComparison.OrdinalIgnoreCase))
+                        && prop.Value.Type != JTokenType.Null)
+                    {
+                        prop.Value = "REDACTED";
+                    }
+                }
+                return jObj.ToString(Formatting.None);
+            }
+            catch (Exception)
+            {
+                return "(unable to parse store properties; not logged)";
+            }
+        }
+
         private void InitializeAwsClient(CertificateStore storeProps)
         {
             _logger.MethodEntry();
             _logger.LogTrace("deserializing store properties..");
-            _logger.LogTrace($"raw value: {storeProps.Properties}");
+            _logger.LogTrace($"raw value (secret fields redacted): {RedactSecretStoreProperties(storeProps.Properties)}");
             AuthCustomFieldParameters customFields;
             try
             {

@@ -25,6 +25,16 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
         // single concatenated PEM secret.  Ignored when SeparatePrivateKey is enabled, since
         // the JSON format always includes the chain.
         public const string INCLUDE_CHAIN = "IncludeChain";
+
+        // Store-type custom fields of type "Secret"; their values are redacted before the
+        // store properties are logged.
+        public static readonly string[] SECRET_FIELDS =
+        {
+            "OAuthClientId",
+            "OAuthClientSecret",
+            "IAMUserAccessKey",
+            "IAMUserAccessSecret"
+        };
     }
     public static class KeyfactorJobType
     {
