@@ -336,13 +336,23 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
             }
 
             // include any explicit encryption key ID
-            if (!string.IsNullOrEmpty(jobParameters.CertProperties.KmsKeyId)) req.KmsKeyId = jobParameters.CertProperties.KmsKeyId;
+            // the password secret (JKS / PFX) is encrypted with the same key as the cert store secret
+            if (!string.IsNullOrEmpty(jobParameters.CertProperties.KmsKeyId))
+            {
+                req.KmsKeyId = jobParameters.CertProperties.KmsKeyId;
+                if (pwdReq != null) pwdReq.KmsKeyId = jobParameters.CertProperties.KmsKeyId;
+            }
 
             // include any additional replica regions
+            // the password secret is replicated to the same regions so the cert store can be opened there
             if (jobParameters.CertProperties.ReplicaRegions != null && jobParameters.CertProperties.ReplicaRegions.Any())
             {
                 req.AddReplicaRegions = jobParameters.CertProperties.ReplicaRegions;
+                if (pwdReq != null) pwdReq.AddReplicaRegions = jobParameters.CertProperties.ReplicaRegions;
             }
+
+            // note: the identification and entry tags are intentionally not applied to the password secret;
+            // the identification tag would cause inventory to treat the password secret as a cert store.
 
             try
             {
@@ -532,13 +542,26 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
             }
 
             // include any explicit encryption key ID
-            if (!string.IsNullOrEmpty(jobParameters.CertProperties.KmsKeyId)) updateCertReq.KmsKeyId = jobParameters.CertProperties.KmsKeyId;
+            // the password secret (JKS / PFX) is encrypted with the same key as the cert store secret
+            if (!string.IsNullOrEmpty(jobParameters.CertProperties.KmsKeyId))
+            {
+                updateCertReq.KmsKeyId = jobParameters.CertProperties.KmsKeyId;
+                if (updatePwReq != null) updatePwReq.KmsKeyId = jobParameters.CertProperties.KmsKeyId;
+            }
 
             UpdateSecretResponse updateCertResp;
 
-            // send request to update the secret value
+            // send request to update the secret value(s)
             try
             {
+                if (updatePwReq != null)
+                {
+                    // the new cert store is protected with the password from this job, so the password secret must be updated as well
+                    _logger.LogTrace($"we will first update the secret containing the password; {updatePwReq.SecretId}");
+                    var updatePwResp = await _secretsManagerClient.UpdateSecretAsync(updatePwReq);
+                    _logger.LogTrace($"successfully updated secret containing the password\nARN: {updatePwResp.ARN}\nversion ID: {updatePwResp.VersionId}");
+                }
+
                 _logger.LogTrace($"sending request to AWS..");
                 updateCertResp = await _secretsManagerClient.UpdateSecretAsync(updateCertReq);
                 _logger.LogTrace($"successfully created secret containing the certificate\nARN: {updateCertResp.ARN}\nversion ID: {updateCertResp.VersionId}");
@@ -593,6 +616,12 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
                 {
                     _logger.LogTrace("replica regions were provided, replacing any existing replica regions..");
                     await ReplaceSecretReplicaRegionsAsync(jobParameters.SecretName, jobParameters.CertProperties.ReplicaRegions);
+
+                    if (updatePwReq != null)
+                    {
+                        _logger.LogTrace("replacing any existing replica regions for the password secret..");
+                        await ReplaceSecretReplicaRegionsAsync(updatePwReq.SecretId, jobParameters.CertProperties.ReplicaRegions);
+                    }
                 }
             }
             catch (Exception ex)
