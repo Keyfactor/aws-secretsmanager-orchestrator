@@ -49,6 +49,10 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
         // When true (AWSSMPEM only), the secret value is written as a JSON document with
         // separate "certificate" (PEM cert + chain, leaf first) and "private_key" (PEM) properties.
         public bool SeparatePrivateKey { get; set; }
+
+        // When true (AWSSMPEM only, and only when SeparatePrivateKey is false), the single PEM
+        // secret contains the leaf certificate, the issuer chain (leaf first), then the private key.
+        public bool IncludeChain { get; set; }
     }
 
     public class CertProperties

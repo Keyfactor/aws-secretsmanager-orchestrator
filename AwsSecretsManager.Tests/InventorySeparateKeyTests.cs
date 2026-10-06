@@ -87,6 +87,26 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Tests
             tags!["Environment"].Should().Be("Prod");
         }
 
+        [Fact]
+        public void ConvertSecretsPem_PlainPemWithChain_InventoriesFullChain()
+        {
+            // The IncludeChain format: leaf, then issuer chain, then key in a single PEM string.
+            var pfx = TestCertFactory.CreateChainPfxBase64(out _, out _);
+            var secret = new AWSSecret
+            {
+                Name = "chained-pem",
+                SecretString = CertUtilities.ConvertPfxToPem(pfx, TestCertFactory.Password, includeChain: true),
+                Tags = new List<Tag>()
+            };
+
+            var item = InvokeConvertPem(secret).Single();
+
+            item.Alias.Should().Be("chained-pem");
+            item.Certificates.Should().HaveCount(2);
+            item.UseChainLevel.Should().BeTrue();
+            item.PrivateKeyEntry.Should().BeTrue();
+        }
+
         // ── helpers ────────────────────────────────────────────────────────
 
         private static string BuildSeparateKeyJsonSecret(string subject)
