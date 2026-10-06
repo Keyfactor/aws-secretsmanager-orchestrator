@@ -44,19 +44,16 @@ It can read and write secrets containing certificates stored in the following fo
 For each format there is a corresponding certificate store type ([AWSSMPEM](#AWSSMPEM), [AWSSMPFX](#AWSSMPFX), [AWSSMJKS](#AWSSMJKS)).
 
 The AWS Secrets Manager Universal Orchestrator extension implements 3 Certificate Store Types. Depending on your use case, you may elect to use one, or all of these Certificate Store Types. Descriptions of each are provided below.
-
 - [AwsSecretsManager PEM](#AWSSMPEM)
-
 - [AwsSecretsManager PFX](#AWSSMPFX)
-
 - [AwsSecretsManager JKS](#AWSSMJKS)
-
 
 ## Compatibility
 
 This integration is compatible with Keyfactor Universal Orchestrator version 10.1 and later.
 
 ## Support
+
 The AWS Secrets Manager Universal Orchestrator extension is community open source and there is **no SLA**. Keyfactor will address issues as resources become available.
 
 > To report a problem or suggest a new feature, use the **[Issues](../../issues)** tab. If you want to contribute bug fixes or additional enhancements, use the **[Pull requests](../../pulls)** tab.
@@ -64,7 +61,6 @@ The AWS Secrets Manager Universal Orchestrator extension is community open sourc
 ## Requirements & Prerequisites
 
 Before installing the AWS Secrets Manager Universal Orchestrator extension, we recommend that you install [kfutil](https://github.com/Keyfactor/kfutil). Kfutil is a command-line tool that simplifies the process of creating store types, installing extensions, and instantiating certificate stores in Keyfactor Command.
-
 
 In order to use this integration, you should have..
 - An instance of Keyfactor Command v11.0+
@@ -139,7 +135,6 @@ would write two tags on the certificate secret: `serial` containing the certific
 
 If the `CertificateTags` value is not valid JSON, the enrollment job fails with an error identifying the `CertificateTags` parameter, rather than a generic parse error.
 
-
 ## Certificate Store Types
 
 To use the AWS Secrets Manager Universal Orchestrator extension, you **must** create the Certificate Store Types required for your use-case. This only needs to happen _once_ per Keyfactor Command instance.
@@ -150,12 +145,8 @@ The AWS Secrets Manager Universal Orchestrator extension implements 3 Certificat
 
 <details><summary>Click to expand details</summary>
 
-
 The AWSSMPEM certificate store type provided by this integration is the one to use for managing certificates stored in AWS Secrets Manager in the PEM format.
 Certificates managed by this certificate store are expected to have the PEM formatted certificate stored as a SecretString in AWS Secrets Manager.
-
-
-
 
 #### AwsSecretsManager PEM Requirements
 
@@ -235,23 +226,22 @@ In summary: supplying a name prefix or tag name and value as part of a certifica
  - Inventory Jobs will only return certificates where the name begins with the prefix, and/or the tagName exists on the secret and contains the provided tagValue.
  - Enrollment into these stores will apply the same convention to newly added certificate secrets; appending the prefix to the name and/or associating the tag name and value.
 
-
-
 #### Supported Operations
 
-| Operation    | Is Supported                                                                                                           |
-|--------------|------------------------------------------------------------------------------------------------------------------------|
-| Add          | ✅ Checked        |
-| Remove       | ✅ Checked     |
-| Discovery    | 🔲 Unchecked  |
+| Operation    | Is Supported |
+|--------------|--------------|
+| Add          | ✅ Checked |
+| Remove       | ✅ Checked |
+| Discovery    | 🔲 Unchecked |
 | Reenrollment | 🔲 Unchecked |
-| Create       | 🔲 Unchecked     |
+| Create       | 🔲 Unchecked |
 
 #### Store Type Creation
 
 ##### Using kfutil:
 `kfutil` is a custom CLI for the Keyfactor Command API and can be used to create certificate store types.
 For more information on [kfutil](https://github.com/Keyfactor/kfutil) check out the [docs](https://github.com/Keyfactor/kfutil?tab=readme-ov-file#quickstart)
+
    <details><summary>Click to expand AWSSMPEM kfutil details</summary>
 
    ##### Using online definition from GitHub:
@@ -270,10 +260,10 @@ For more information on [kfutil](https://github.com/Keyfactor/kfutil) check out 
    ```
    </details>
 
-
 #### Manual Creation
 Below are instructions on how to create the AWSSMPEM store type manually in
 the Keyfactor Command Portal
+
    <details><summary>Click to expand manual AWSSMPEM details</summary>
 
    Create a store type called `AWSSMPEM` with the attributes in the tables below:
@@ -284,11 +274,11 @@ the Keyfactor Command Portal
    | Name | AwsSecretsManager PEM | Display name for the store type (may be customized) |
    | Short Name | AWSSMPEM | Short display name for the store type |
    | Capability | AWSSMPEM | Store type name orchestrator will register with. Check the box to allow entry of value |
-   | Supports Add | ✅ Checked | Check the box. Indicates that the Store Type supports Management Add |
-   | Supports Remove | ✅ Checked | Check the box. Indicates that the Store Type supports Management Remove |
-   | Supports Discovery | 🔲 Unchecked |  Indicates that the Store Type supports Discovery |
-   | Supports Reenrollment | 🔲 Unchecked |  Indicates that the Store Type supports Reenrollment |
-   | Supports Create | 🔲 Unchecked |  Indicates that the Store Type supports store creation |
+   | Supports Add | ✅ Checked | Indicates that the Store Type supports Management Add |
+   | Supports Remove | ✅ Checked | Indicates that the Store Type supports Management Remove |
+   | Supports Discovery | 🔲 Unchecked | Indicates that the Store Type supports Discovery |
+   | Supports Reenrollment | 🔲 Unchecked | Indicates that the Store Type supports Reenrollment |
+   | Supports Create | 🔲 Unchecked | Indicates that the Store Type supports store creation |
    | Needs Server | 🔲 Unchecked | Determines if a target server name is required when creating store |
    | Blueprint Allowed | 🔲 Unchecked | Determines if store type may be included in an Orchestrator blueprint |
    | Uses PowerShell | 🔲 Unchecked | Determines if underlying implementation is PowerShell |
@@ -297,18 +287,18 @@ the Keyfactor Command Portal
 
    The Basic tab should look like this:
 
-   ![AWSSMPEM Basic Tab](docsource/images/AWSSMPEM-basic-store-type-dialog.png)
+   ![AWSSMPEM Basic Tab](docsource/images/AWSSMPEM-basic-store-type-dialog.svg)
 
    ##### Advanced Tab
    | Attribute | Value | Description |
    | --------- | ----- | ----- |
    | Supports Custom Alias | Required | Determines if an individual entry within a store can have a custom Alias. |
-   | Private Key Handling | Optional | This determines if Keyfactor can send the private key associated with a certificate to the store. Required because IIS certificates without private keys would be invalid. |
+   | Private Key Handling | Optional | This determines if Keyfactor can send the private key associated with a certificate to the store. |
    | PFX Password Style | Default | 'Default' - PFX password is randomly generated, 'Custom' - PFX password may be specified when the enrollment job is created (Requires the Allow Custom Password application setting to be enabled.) |
 
    The Advanced tab should look like this:
 
-   ![AWSSMPEM Advanced Tab](docsource/images/AWSSMPEM-advanced-store-type-dialog.png)
+   ![AWSSMPEM Advanced Tab](docsource/images/AWSSMPEM-advanced-store-type-dialog.svg)
 
    > For Keyfactor **Command versions 24.4 and later**, a Certificate Format dropdown is available with PFX and PEM options. Ensure that **PFX** is selected, as this determines the format of new and renewed certificates sent to the Orchestrator during a Management job. Currently, all Keyfactor-supported Orchestrator extensions support only PFX.
 
@@ -334,121 +324,90 @@ the Keyfactor Command Portal
 
    The Custom Fields tab should look like this:
 
-   ![AWSSMPEM Custom Fields Tab](docsource/images/AWSSMPEM-custom-fields-store-type-dialog.png)
-
+   ![AWSSMPEM Custom Fields Tab](docsource/images/AWSSMPEM-custom-fields-store-type-dialog.svg)
 
    ###### Store as JSON with separate private key
    When enabled, the certificate is stored as a JSON document with separate 'certificate' (PEM certificate and chain, leaf first) and 'private_key' (PEM) properties, rather than a single concatenated PEM string.
 
-   ![AWSSMPEM Custom Field - SeparatePrivateKey](docsource/images/AWSSMPEM-custom-field-SeparatePrivateKey-dialog.png)
-   ![AWSSMPEM Custom Field - SeparatePrivateKey](docsource/images/AWSSMPEM-custom-field-SeparatePrivateKey-validation-options-dialog.png)
-
+   ![AWSSMPEM Custom Field - SeparatePrivateKey](docsource/images/AWSSMPEM-custom-field-SeparatePrivateKey-dialog.svg)
 
 
    ###### Include certificate chain in PEM
    When enabled, the single concatenated PEM secret contains the leaf certificate, followed by the issuer chain (leaf first), followed by the private key. Only applies when 'Store as JSON with separate private key' is disabled; the JSON format always includes the chain.
 
-   ![AWSSMPEM Custom Field - IncludeChain](docsource/images/AWSSMPEM-custom-field-IncludeChain-dialog.png)
-   ![AWSSMPEM Custom Field - IncludeChain](docsource/images/AWSSMPEM-custom-field-IncludeChain-validation-options-dialog.png)
-
+   ![AWSSMPEM Custom Field - IncludeChain](docsource/images/AWSSMPEM-custom-field-IncludeChain-dialog.svg)
 
 
    ###### Use Default SDK Auth
    A switch to enable the store to use Default SDK credentials
 
-   ![AWSSMPEM Custom Field - UseDefaultSdkAuth](docsource/images/AWSSMPEM-custom-field-UseDefaultSdkAuth-dialog.png)
-   ![AWSSMPEM Custom Field - UseDefaultSdkAuth](docsource/images/AWSSMPEM-custom-field-UseDefaultSdkAuth-validation-options-dialog.png)
-
+   ![AWSSMPEM Custom Field - UseDefaultSdkAuth](docsource/images/AWSSMPEM-custom-field-UseDefaultSdkAuth-dialog.svg)
 
 
    ###### Assume new Role using Default SDK Auth
    A switch to enable the store to assume a new Role when using Default SDK credentials
 
-   ![AWSSMPEM Custom Field - DefaultSdkAssumeRole](docsource/images/AWSSMPEM-custom-field-DefaultSdkAssumeRole-dialog.png)
-   ![AWSSMPEM Custom Field - DefaultSdkAssumeRole](docsource/images/AWSSMPEM-custom-field-DefaultSdkAssumeRole-validation-options-dialog.png)
-
+   ![AWSSMPEM Custom Field - DefaultSdkAssumeRole](docsource/images/AWSSMPEM-custom-field-DefaultSdkAssumeRole-dialog.svg)
 
 
    ###### Use OAuth 2.0 Provider
    A switch to enable the store to use an OAuth provider workflow to authenticate with AWS
 
-   ![AWSSMPEM Custom Field - UseOAuth](docsource/images/AWSSMPEM-custom-field-UseOAuth-dialog.png)
-   ![AWSSMPEM Custom Field - UseOAuth](docsource/images/AWSSMPEM-custom-field-UseOAuth-validation-options-dialog.png)
-
+   ![AWSSMPEM Custom Field - UseOAuth](docsource/images/AWSSMPEM-custom-field-UseOAuth-dialog.svg)
 
 
    ###### OAuth Scope
    This is the OAuth Scope needed for Okta OAuth, defined in Okta
 
-   ![AWSSMPEM Custom Field - OAuthScope](docsource/images/AWSSMPEM-custom-field-OAuthScope-dialog.png)
-   ![AWSSMPEM Custom Field - OAuthScope](docsource/images/AWSSMPEM-custom-field-OAuthScope-validation-options-dialog.png)
-
+   ![AWSSMPEM Custom Field - OAuthScope](docsource/images/AWSSMPEM-custom-field-OAuthScope-dialog.svg)
 
 
    ###### OAuth Grant Type
    In OAuth 2.0, the term 'grant type' refers to the way an application gets an access token. In Okta this is `client_credentials`
 
-   ![AWSSMPEM Custom Field - OAuthGrantType](docsource/images/AWSSMPEM-custom-field-OAuthGrantType-dialog.png)
-   ![AWSSMPEM Custom Field - OAuthGrantType](docsource/images/AWSSMPEM-custom-field-OAuthGrantType-validation-options-dialog.png)
-
+   ![AWSSMPEM Custom Field - OAuthGrantType](docsource/images/AWSSMPEM-custom-field-OAuthGrantType-dialog.svg)
 
 
    ###### OAuth Url
    The token endpoint for the OAuth 2.0 provider
 
-   ![AWSSMPEM Custom Field - OAuthUrl](docsource/images/AWSSMPEM-custom-field-OAuthUrl-dialog.png)
-   ![AWSSMPEM Custom Field - OAuthUrl](docsource/images/AWSSMPEM-custom-field-OAuthUrl-validation-options-dialog.png)
-
+   ![AWSSMPEM Custom Field - OAuthUrl](docsource/images/AWSSMPEM-custom-field-OAuthUrl-dialog.svg)
 
 
    ###### OAuth Client ID
    The Client ID for OAuth.
 
-   ![AWSSMPEM Custom Field - OAuthClientId](docsource/images/AWSSMPEM-custom-field-OAuthClientId-dialog.png)
-   ![AWSSMPEM Custom Field - OAuthClientId](docsource/images/AWSSMPEM-custom-field-OAuthClientId-validation-options-dialog.png)
-
+   ![AWSSMPEM Custom Field - OAuthClientId](docsource/images/AWSSMPEM-custom-field-OAuthClientId-dialog.svg)
 
 
    ###### OAuth Client Secret
    The Client Secret for OAuth.
 
-   ![AWSSMPEM Custom Field - OAuthClientSecret](docsource/images/AWSSMPEM-custom-field-OAuthClientSecret-dialog.png)
-   ![AWSSMPEM Custom Field - OAuthClientSecret](docsource/images/AWSSMPEM-custom-field-OAuthClientSecret-validation-options-dialog.png)
-
+   ![AWSSMPEM Custom Field - OAuthClientSecret](docsource/images/AWSSMPEM-custom-field-OAuthClientSecret-dialog.svg)
 
 
    ###### Use IAM User Auth
    A switch to enable the store to use IAM User auth to assume a role when authenticating with AWS
 
-   ![AWSSMPEM Custom Field - UseIAM](docsource/images/AWSSMPEM-custom-field-UseIAM-dialog.png)
-   ![AWSSMPEM Custom Field - UseIAM](docsource/images/AWSSMPEM-custom-field-UseIAM-validation-options-dialog.png)
-
+   ![AWSSMPEM Custom Field - UseIAM](docsource/images/AWSSMPEM-custom-field-UseIAM-dialog.svg)
 
 
    ###### IAM User Access Key
    The AWS Access Key for an IAM User
 
-   ![AWSSMPEM Custom Field - IAMUserAccessKey](docsource/images/AWSSMPEM-custom-field-IAMUserAccessKey-dialog.png)
-   ![AWSSMPEM Custom Field - IAMUserAccessKey](docsource/images/AWSSMPEM-custom-field-IAMUserAccessKey-validation-options-dialog.png)
-
+   ![AWSSMPEM Custom Field - IAMUserAccessKey](docsource/images/AWSSMPEM-custom-field-IAMUserAccessKey-dialog.svg)
 
 
    ###### IAM User Access Secret
    The AWS Access Secret for an IAM User.
 
-   ![AWSSMPEM Custom Field - IAMUserAccessSecret](docsource/images/AWSSMPEM-custom-field-IAMUserAccessSecret-dialog.png)
-   ![AWSSMPEM Custom Field - IAMUserAccessSecret](docsource/images/AWSSMPEM-custom-field-IAMUserAccessSecret-validation-options-dialog.png)
-
+   ![AWSSMPEM Custom Field - IAMUserAccessSecret](docsource/images/AWSSMPEM-custom-field-IAMUserAccessSecret-dialog.svg)
 
 
    ###### sts:ExternalId
    An optional parameter sts:ExternalId to pass with Assume Role calls
 
-   ![AWSSMPEM Custom Field - ExternalId](docsource/images/AWSSMPEM-custom-field-ExternalId-dialog.png)
-   ![AWSSMPEM Custom Field - ExternalId](docsource/images/AWSSMPEM-custom-field-ExternalId-validation-options-dialog.png)
-
-
-
+   ![AWSSMPEM Custom Field - ExternalId](docsource/images/AWSSMPEM-custom-field-ExternalId-dialog.svg)
 
 
    ##### Entry Parameters Tab
@@ -460,22 +419,17 @@ the Keyfactor Command Portal
 
    The Entry Parameters tab should look like this:
 
-   ![AWSSMPEM Entry Parameters Tab](docsource/images/AWSSMPEM-entry-parameters-store-type-dialog.png)
-
-
+   ![AWSSMPEM Entry Parameters Tab](docsource/images/AWSSMPEM-entry-parameters-store-type-dialog.svg)
    ##### Certificate Tags
    If desired, tags can be applied to the certificate entries in AWS Secrets Manager.  Provide them as a JSON string of key-value pairs ie: '{'tag-name': 'tag-content', 'other-tag-name': 'other-tag-content'}'.  Tag values may contain the placeholder tokens %SERIAL_NUMBER%, %NOT_BEFORE%, and %NOT_AFTER%, which are replaced with the certificate's serial number (hexadecimal) and validity dates (ISO-8601 UTC) before the tag is written.
 
-   ![AWSSMPEM Entry Parameter - CertificateTags](docsource/images/AWSSMPEM-entry-parameters-store-type-dialog-CertificateTags.png)
-   ![AWSSMPEM Entry Parameter - CertificateTags](docsource/images/AWSSMPEM-entry-parameters-store-type-dialog-CertificateTags-validation-options.png)
+   ![AWSSMPEM Entry Parameter - CertificateTags](docsource/images/AWSSMPEM-entry-parameters-store-type-dialog-CertificateTags.svg)
 
 
    ##### Replica Regions
    To replicate secrets to other regions, you can provide them here as a JSON array in the format: [{ 'KmsKeyId': '<optionally specify the encryption key ID', 'Region': '<region name>'}, {...}]
 
-   ![AWSSMPEM Entry Parameter - ReplicaRegions](docsource/images/AWSSMPEM-entry-parameters-store-type-dialog-ReplicaRegions.png)
-   ![AWSSMPEM Entry Parameter - ReplicaRegions](docsource/images/AWSSMPEM-entry-parameters-store-type-dialog-ReplicaRegions-validation-options.png)
-
+   ![AWSSMPEM Entry Parameter - ReplicaRegions](docsource/images/AWSSMPEM-entry-parameters-store-type-dialog-ReplicaRegions.svg)
 
 
    </details>
@@ -485,13 +439,9 @@ the Keyfactor Command Portal
 
 <details><summary>Click to expand details</summary>
 
-
 The AWSSMPFX certificate store type allows managing certificates stored in AWS Secrets Manager in the PFX format via Keyfactor Command.
 Since AWS Secrets Manager is designed to store arbitrary secrets of any type, it is necessary that we implement a convention for identifying and writing these certificates as 
 AWS Secrets Manager secrets.
-
-
-
 
 #### AwsSecretsManager PFX Requirements
 
@@ -569,23 +519,22 @@ Enrolling a certificate with the alias "mycert" into a AWSSMPFX certificate stor
 
 ---
 
-
-
 #### Supported Operations
 
-| Operation    | Is Supported                                                                                                           |
-|--------------|------------------------------------------------------------------------------------------------------------------------|
-| Add          | ✅ Checked        |
-| Remove       | ✅ Checked     |
-| Discovery    | 🔲 Unchecked  |
+| Operation    | Is Supported |
+|--------------|--------------|
+| Add          | ✅ Checked |
+| Remove       | ✅ Checked |
+| Discovery    | 🔲 Unchecked |
 | Reenrollment | 🔲 Unchecked |
-| Create       | 🔲 Unchecked     |
+| Create       | 🔲 Unchecked |
 
 #### Store Type Creation
 
 ##### Using kfutil:
 `kfutil` is a custom CLI for the Keyfactor Command API and can be used to create certificate store types.
 For more information on [kfutil](https://github.com/Keyfactor/kfutil) check out the [docs](https://github.com/Keyfactor/kfutil?tab=readme-ov-file#quickstart)
+
    <details><summary>Click to expand AWSSMPFX kfutil details</summary>
 
    ##### Using online definition from GitHub:
@@ -604,10 +553,10 @@ For more information on [kfutil](https://github.com/Keyfactor/kfutil) check out 
    ```
    </details>
 
-
 #### Manual Creation
 Below are instructions on how to create the AWSSMPFX store type manually in
 the Keyfactor Command Portal
+
    <details><summary>Click to expand manual AWSSMPFX details</summary>
 
    Create a store type called `AWSSMPFX` with the attributes in the tables below:
@@ -618,11 +567,11 @@ the Keyfactor Command Portal
    | Name | AwsSecretsManager PFX | Display name for the store type (may be customized) |
    | Short Name | AWSSMPFX | Short display name for the store type |
    | Capability | AWSSMPFX | Store type name orchestrator will register with. Check the box to allow entry of value |
-   | Supports Add | ✅ Checked | Check the box. Indicates that the Store Type supports Management Add |
-   | Supports Remove | ✅ Checked | Check the box. Indicates that the Store Type supports Management Remove |
-   | Supports Discovery | 🔲 Unchecked |  Indicates that the Store Type supports Discovery |
-   | Supports Reenrollment | 🔲 Unchecked |  Indicates that the Store Type supports Reenrollment |
-   | Supports Create | 🔲 Unchecked |  Indicates that the Store Type supports store creation |
+   | Supports Add | ✅ Checked | Indicates that the Store Type supports Management Add |
+   | Supports Remove | ✅ Checked | Indicates that the Store Type supports Management Remove |
+   | Supports Discovery | 🔲 Unchecked | Indicates that the Store Type supports Discovery |
+   | Supports Reenrollment | 🔲 Unchecked | Indicates that the Store Type supports Reenrollment |
+   | Supports Create | 🔲 Unchecked | Indicates that the Store Type supports store creation |
    | Needs Server | 🔲 Unchecked | Determines if a target server name is required when creating store |
    | Blueprint Allowed | 🔲 Unchecked | Determines if store type may be included in an Orchestrator blueprint |
    | Uses PowerShell | 🔲 Unchecked | Determines if underlying implementation is PowerShell |
@@ -631,18 +580,18 @@ the Keyfactor Command Portal
 
    The Basic tab should look like this:
 
-   ![AWSSMPFX Basic Tab](docsource/images/AWSSMPFX-basic-store-type-dialog.png)
+   ![AWSSMPFX Basic Tab](docsource/images/AWSSMPFX-basic-store-type-dialog.svg)
 
    ##### Advanced Tab
    | Attribute | Value | Description |
    | --------- | ----- | ----- |
    | Supports Custom Alias | Required | Determines if an individual entry within a store can have a custom Alias. |
-   | Private Key Handling | Optional | This determines if Keyfactor can send the private key associated with a certificate to the store. Required because IIS certificates without private keys would be invalid. |
+   | Private Key Handling | Optional | This determines if Keyfactor can send the private key associated with a certificate to the store. |
    | PFX Password Style | Default | 'Default' - PFX password is randomly generated, 'Custom' - PFX password may be specified when the enrollment job is created (Requires the Allow Custom Password application setting to be enabled.) |
 
    The Advanced tab should look like this:
 
-   ![AWSSMPFX Advanced Tab](docsource/images/AWSSMPFX-advanced-store-type-dialog.png)
+   ![AWSSMPFX Advanced Tab](docsource/images/AWSSMPFX-advanced-store-type-dialog.svg)
 
    > For Keyfactor **Command versions 24.4 and later**, a Certificate Format dropdown is available with PFX and PEM options. Ensure that **PFX** is selected, as this determines the format of new and renewed certificates sent to the Orchestrator during a Management job. Currently, all Keyfactor-supported Orchestrator extensions support only PFX.
 
@@ -666,105 +615,78 @@ the Keyfactor Command Portal
 
    The Custom Fields tab should look like this:
 
-   ![AWSSMPFX Custom Fields Tab](docsource/images/AWSSMPFX-custom-fields-store-type-dialog.png)
-
+   ![AWSSMPFX Custom Fields Tab](docsource/images/AWSSMPFX-custom-fields-store-type-dialog.svg)
 
    ###### Use Default SDK Auth
    A switch to enable the store to use Default SDK credentials
 
-   ![AWSSMPFX Custom Field - UseDefaultSdkAuth](docsource/images/AWSSMPFX-custom-field-UseDefaultSdkAuth-dialog.png)
-   ![AWSSMPFX Custom Field - UseDefaultSdkAuth](docsource/images/AWSSMPFX-custom-field-UseDefaultSdkAuth-validation-options-dialog.png)
-
+   ![AWSSMPFX Custom Field - UseDefaultSdkAuth](docsource/images/AWSSMPFX-custom-field-UseDefaultSdkAuth-dialog.svg)
 
 
    ###### Assume new Role using Default SDK Auth
    A switch to enable the store to assume a new Role when using Default SDK credentials
 
-   ![AWSSMPFX Custom Field - DefaultSdkAssumeRole](docsource/images/AWSSMPFX-custom-field-DefaultSdkAssumeRole-dialog.png)
-   ![AWSSMPFX Custom Field - DefaultSdkAssumeRole](docsource/images/AWSSMPFX-custom-field-DefaultSdkAssumeRole-validation-options-dialog.png)
-
+   ![AWSSMPFX Custom Field - DefaultSdkAssumeRole](docsource/images/AWSSMPFX-custom-field-DefaultSdkAssumeRole-dialog.svg)
 
 
    ###### Use OAuth 2.0 Provider
    A switch to enable the store to use an OAuth provider workflow to authenticate with AWS
 
-   ![AWSSMPFX Custom Field - UseOAuth](docsource/images/AWSSMPFX-custom-field-UseOAuth-dialog.png)
-   ![AWSSMPFX Custom Field - UseOAuth](docsource/images/AWSSMPFX-custom-field-UseOAuth-validation-options-dialog.png)
-
+   ![AWSSMPFX Custom Field - UseOAuth](docsource/images/AWSSMPFX-custom-field-UseOAuth-dialog.svg)
 
 
    ###### OAuth Scope
    This is the OAuth Scope needed for Okta OAuth, defined in Okta
 
-   ![AWSSMPFX Custom Field - OAuthScope](docsource/images/AWSSMPFX-custom-field-OAuthScope-dialog.png)
-   ![AWSSMPFX Custom Field - OAuthScope](docsource/images/AWSSMPFX-custom-field-OAuthScope-validation-options-dialog.png)
-
+   ![AWSSMPFX Custom Field - OAuthScope](docsource/images/AWSSMPFX-custom-field-OAuthScope-dialog.svg)
 
 
    ###### OAuth Grant Type
    In OAuth 2.0, the term 'grant type' refers to the way an application gets an access token. In Okta this is `client_credentials`
 
-   ![AWSSMPFX Custom Field - OAuthGrantType](docsource/images/AWSSMPFX-custom-field-OAuthGrantType-dialog.png)
-   ![AWSSMPFX Custom Field - OAuthGrantType](docsource/images/AWSSMPFX-custom-field-OAuthGrantType-validation-options-dialog.png)
-
+   ![AWSSMPFX Custom Field - OAuthGrantType](docsource/images/AWSSMPFX-custom-field-OAuthGrantType-dialog.svg)
 
 
    ###### OAuth Url
    The token endpoint for the OAuth 2.0 provider
 
-   ![AWSSMPFX Custom Field - OAuthUrl](docsource/images/AWSSMPFX-custom-field-OAuthUrl-dialog.png)
-   ![AWSSMPFX Custom Field - OAuthUrl](docsource/images/AWSSMPFX-custom-field-OAuthUrl-validation-options-dialog.png)
-
+   ![AWSSMPFX Custom Field - OAuthUrl](docsource/images/AWSSMPFX-custom-field-OAuthUrl-dialog.svg)
 
 
    ###### OAuth Client ID
    The Client ID for OAuth.
 
-   ![AWSSMPFX Custom Field - OAuthClientId](docsource/images/AWSSMPFX-custom-field-OAuthClientId-dialog.png)
-   ![AWSSMPFX Custom Field - OAuthClientId](docsource/images/AWSSMPFX-custom-field-OAuthClientId-validation-options-dialog.png)
-
+   ![AWSSMPFX Custom Field - OAuthClientId](docsource/images/AWSSMPFX-custom-field-OAuthClientId-dialog.svg)
 
 
    ###### OAuth Client Secret
    The Client Secret for OAuth.
 
-   ![AWSSMPFX Custom Field - OAuthClientSecret](docsource/images/AWSSMPFX-custom-field-OAuthClientSecret-dialog.png)
-   ![AWSSMPFX Custom Field - OAuthClientSecret](docsource/images/AWSSMPFX-custom-field-OAuthClientSecret-validation-options-dialog.png)
-
+   ![AWSSMPFX Custom Field - OAuthClientSecret](docsource/images/AWSSMPFX-custom-field-OAuthClientSecret-dialog.svg)
 
 
    ###### Use IAM User Auth
    A switch to enable the store to use IAM User auth to assume a role when authenticating with AWS
 
-   ![AWSSMPFX Custom Field - UseIAM](docsource/images/AWSSMPFX-custom-field-UseIAM-dialog.png)
-   ![AWSSMPFX Custom Field - UseIAM](docsource/images/AWSSMPFX-custom-field-UseIAM-validation-options-dialog.png)
-
+   ![AWSSMPFX Custom Field - UseIAM](docsource/images/AWSSMPFX-custom-field-UseIAM-dialog.svg)
 
 
    ###### IAM User Access Key
    The AWS Access Key for an IAM User
 
-   ![AWSSMPFX Custom Field - IAMUserAccessKey](docsource/images/AWSSMPFX-custom-field-IAMUserAccessKey-dialog.png)
-   ![AWSSMPFX Custom Field - IAMUserAccessKey](docsource/images/AWSSMPFX-custom-field-IAMUserAccessKey-validation-options-dialog.png)
-
+   ![AWSSMPFX Custom Field - IAMUserAccessKey](docsource/images/AWSSMPFX-custom-field-IAMUserAccessKey-dialog.svg)
 
 
    ###### IAM User Access Secret
    The AWS Access Secret for an IAM User.
 
-   ![AWSSMPFX Custom Field - IAMUserAccessSecret](docsource/images/AWSSMPFX-custom-field-IAMUserAccessSecret-dialog.png)
-   ![AWSSMPFX Custom Field - IAMUserAccessSecret](docsource/images/AWSSMPFX-custom-field-IAMUserAccessSecret-validation-options-dialog.png)
-
+   ![AWSSMPFX Custom Field - IAMUserAccessSecret](docsource/images/AWSSMPFX-custom-field-IAMUserAccessSecret-dialog.svg)
 
 
    ###### sts:ExternalId
    An optional parameter sts:ExternalId to pass with Assume Role calls
 
-   ![AWSSMPFX Custom Field - ExternalId](docsource/images/AWSSMPFX-custom-field-ExternalId-dialog.png)
-   ![AWSSMPFX Custom Field - ExternalId](docsource/images/AWSSMPFX-custom-field-ExternalId-validation-options-dialog.png)
-
-
-
+   ![AWSSMPFX Custom Field - ExternalId](docsource/images/AWSSMPFX-custom-field-ExternalId-dialog.svg)
 
 
    ##### Entry Parameters Tab
@@ -776,22 +698,17 @@ the Keyfactor Command Portal
 
    The Entry Parameters tab should look like this:
 
-   ![AWSSMPFX Entry Parameters Tab](docsource/images/AWSSMPFX-entry-parameters-store-type-dialog.png)
-
-
+   ![AWSSMPFX Entry Parameters Tab](docsource/images/AWSSMPFX-entry-parameters-store-type-dialog.svg)
    ##### Certificate Tags
    If desired, tags can be applied to the certificate entries in AWS Secrets Manager.  Provide them as a JSON string of key-value pairs ie: '{'tag-name': 'tag-content', 'other-tag-name': 'other-tag-content'}'.  Tag values may contain the placeholder tokens %SERIAL_NUMBER%, %NOT_BEFORE%, and %NOT_AFTER%, which are replaced with the certificate's serial number (hexadecimal) and validity dates (ISO-8601 UTC) before the tag is written.
 
-   ![AWSSMPFX Entry Parameter - CertificateTags](docsource/images/AWSSMPFX-entry-parameters-store-type-dialog-CertificateTags.png)
-   ![AWSSMPFX Entry Parameter - CertificateTags](docsource/images/AWSSMPFX-entry-parameters-store-type-dialog-CertificateTags-validation-options.png)
+   ![AWSSMPFX Entry Parameter - CertificateTags](docsource/images/AWSSMPFX-entry-parameters-store-type-dialog-CertificateTags.svg)
 
 
    ##### Replica Regions
    To replicate secrets to other regions, you can provide them here as a JSON array in the format: [{ 'KmsKeyId': '<optionally specify the encryption key ID', 'Region': '<region name>'}, {...}]
 
-   ![AWSSMPFX Entry Parameter - ReplicaRegions](docsource/images/AWSSMPFX-entry-parameters-store-type-dialog-ReplicaRegions.png)
-   ![AWSSMPFX Entry Parameter - ReplicaRegions](docsource/images/AWSSMPFX-entry-parameters-store-type-dialog-ReplicaRegions-validation-options.png)
-
+   ![AWSSMPFX Entry Parameter - ReplicaRegions](docsource/images/AWSSMPFX-entry-parameters-store-type-dialog-ReplicaRegions.svg)
 
 
    </details>
@@ -801,13 +718,9 @@ the Keyfactor Command Portal
 
 <details><summary>Click to expand details</summary>
 
-
 The AWSSMJKS certificate store type allows managing certificates stored in AWS Secrets Manager in the JKS (Java Keystore) format via Keyfactor Command.
 Since AWS Secrets Manager is designed to store arbitrary secrets of any type, it is necessary that we implement a convention for identifying and writing these certificates as 
 AWS Secrets Manager secrets.
-
-
-
 
 #### AwsSecretsManager JKS Requirements
 
@@ -885,23 +798,22 @@ Enrolling a certificate with the alias "mycert" into a AWSSMJKS certificate stor
 
 ---
 
-
-
 #### Supported Operations
 
-| Operation    | Is Supported                                                                                                           |
-|--------------|------------------------------------------------------------------------------------------------------------------------|
-| Add          | ✅ Checked        |
-| Remove       | ✅ Checked     |
-| Discovery    | 🔲 Unchecked  |
+| Operation    | Is Supported |
+|--------------|--------------|
+| Add          | ✅ Checked |
+| Remove       | ✅ Checked |
+| Discovery    | 🔲 Unchecked |
 | Reenrollment | 🔲 Unchecked |
-| Create       | 🔲 Unchecked     |
+| Create       | 🔲 Unchecked |
 
 #### Store Type Creation
 
 ##### Using kfutil:
 `kfutil` is a custom CLI for the Keyfactor Command API and can be used to create certificate store types.
 For more information on [kfutil](https://github.com/Keyfactor/kfutil) check out the [docs](https://github.com/Keyfactor/kfutil?tab=readme-ov-file#quickstart)
+
    <details><summary>Click to expand AWSSMJKS kfutil details</summary>
 
    ##### Using online definition from GitHub:
@@ -920,10 +832,10 @@ For more information on [kfutil](https://github.com/Keyfactor/kfutil) check out 
    ```
    </details>
 
-
 #### Manual Creation
 Below are instructions on how to create the AWSSMJKS store type manually in
 the Keyfactor Command Portal
+
    <details><summary>Click to expand manual AWSSMJKS details</summary>
 
    Create a store type called `AWSSMJKS` with the attributes in the tables below:
@@ -934,11 +846,11 @@ the Keyfactor Command Portal
    | Name | AwsSecretsManager JKS | Display name for the store type (may be customized) |
    | Short Name | AWSSMJKS | Short display name for the store type |
    | Capability | AWSSMJKS | Store type name orchestrator will register with. Check the box to allow entry of value |
-   | Supports Add | ✅ Checked | Check the box. Indicates that the Store Type supports Management Add |
-   | Supports Remove | ✅ Checked | Check the box. Indicates that the Store Type supports Management Remove |
-   | Supports Discovery | 🔲 Unchecked |  Indicates that the Store Type supports Discovery |
-   | Supports Reenrollment | 🔲 Unchecked |  Indicates that the Store Type supports Reenrollment |
-   | Supports Create | 🔲 Unchecked |  Indicates that the Store Type supports store creation |
+   | Supports Add | ✅ Checked | Indicates that the Store Type supports Management Add |
+   | Supports Remove | ✅ Checked | Indicates that the Store Type supports Management Remove |
+   | Supports Discovery | 🔲 Unchecked | Indicates that the Store Type supports Discovery |
+   | Supports Reenrollment | 🔲 Unchecked | Indicates that the Store Type supports Reenrollment |
+   | Supports Create | 🔲 Unchecked | Indicates that the Store Type supports store creation |
    | Needs Server | 🔲 Unchecked | Determines if a target server name is required when creating store |
    | Blueprint Allowed | 🔲 Unchecked | Determines if store type may be included in an Orchestrator blueprint |
    | Uses PowerShell | 🔲 Unchecked | Determines if underlying implementation is PowerShell |
@@ -947,18 +859,18 @@ the Keyfactor Command Portal
 
    The Basic tab should look like this:
 
-   ![AWSSMJKS Basic Tab](docsource/images/AWSSMJKS-basic-store-type-dialog.png)
+   ![AWSSMJKS Basic Tab](docsource/images/AWSSMJKS-basic-store-type-dialog.svg)
 
    ##### Advanced Tab
    | Attribute | Value | Description |
    | --------- | ----- | ----- |
    | Supports Custom Alias | Required | Determines if an individual entry within a store can have a custom Alias. |
-   | Private Key Handling | Optional | This determines if Keyfactor can send the private key associated with a certificate to the store. Required because IIS certificates without private keys would be invalid. |
+   | Private Key Handling | Optional | This determines if Keyfactor can send the private key associated with a certificate to the store. |
    | PFX Password Style | Default | 'Default' - PFX password is randomly generated, 'Custom' - PFX password may be specified when the enrollment job is created (Requires the Allow Custom Password application setting to be enabled.) |
 
    The Advanced tab should look like this:
 
-   ![AWSSMJKS Advanced Tab](docsource/images/AWSSMJKS-advanced-store-type-dialog.png)
+   ![AWSSMJKS Advanced Tab](docsource/images/AWSSMJKS-advanced-store-type-dialog.svg)
 
    > For Keyfactor **Command versions 24.4 and later**, a Certificate Format dropdown is available with PFX and PEM options. Ensure that **PFX** is selected, as this determines the format of new and renewed certificates sent to the Orchestrator during a Management job. Currently, all Keyfactor-supported Orchestrator extensions support only PFX.
 
@@ -982,105 +894,78 @@ the Keyfactor Command Portal
 
    The Custom Fields tab should look like this:
 
-   ![AWSSMJKS Custom Fields Tab](docsource/images/AWSSMJKS-custom-fields-store-type-dialog.png)
-
+   ![AWSSMJKS Custom Fields Tab](docsource/images/AWSSMJKS-custom-fields-store-type-dialog.svg)
 
    ###### Use Default SDK Auth
    A switch to enable the store to use Default SDK credentials
 
-   ![AWSSMJKS Custom Field - UseDefaultSdkAuth](docsource/images/AWSSMJKS-custom-field-UseDefaultSdkAuth-dialog.png)
-   ![AWSSMJKS Custom Field - UseDefaultSdkAuth](docsource/images/AWSSMJKS-custom-field-UseDefaultSdkAuth-validation-options-dialog.png)
-
+   ![AWSSMJKS Custom Field - UseDefaultSdkAuth](docsource/images/AWSSMJKS-custom-field-UseDefaultSdkAuth-dialog.svg)
 
 
    ###### Assume new Role using Default SDK Auth
    A switch to enable the store to assume a new Role when using Default SDK credentials
 
-   ![AWSSMJKS Custom Field - DefaultSdkAssumeRole](docsource/images/AWSSMJKS-custom-field-DefaultSdkAssumeRole-dialog.png)
-   ![AWSSMJKS Custom Field - DefaultSdkAssumeRole](docsource/images/AWSSMJKS-custom-field-DefaultSdkAssumeRole-validation-options-dialog.png)
-
+   ![AWSSMJKS Custom Field - DefaultSdkAssumeRole](docsource/images/AWSSMJKS-custom-field-DefaultSdkAssumeRole-dialog.svg)
 
 
    ###### Use OAuth 2.0 Provider
    A switch to enable the store to use an OAuth provider workflow to authenticate with AWS
 
-   ![AWSSMJKS Custom Field - UseOAuth](docsource/images/AWSSMJKS-custom-field-UseOAuth-dialog.png)
-   ![AWSSMJKS Custom Field - UseOAuth](docsource/images/AWSSMJKS-custom-field-UseOAuth-validation-options-dialog.png)
-
+   ![AWSSMJKS Custom Field - UseOAuth](docsource/images/AWSSMJKS-custom-field-UseOAuth-dialog.svg)
 
 
    ###### OAuth Scope
    This is the OAuth Scope needed for Okta OAuth, defined in Okta
 
-   ![AWSSMJKS Custom Field - OAuthScope](docsource/images/AWSSMJKS-custom-field-OAuthScope-dialog.png)
-   ![AWSSMJKS Custom Field - OAuthScope](docsource/images/AWSSMJKS-custom-field-OAuthScope-validation-options-dialog.png)
-
+   ![AWSSMJKS Custom Field - OAuthScope](docsource/images/AWSSMJKS-custom-field-OAuthScope-dialog.svg)
 
 
    ###### OAuth Grant Type
    In OAuth 2.0, the term 'grant type' refers to the way an application gets an access token. In Okta this is `client_credentials`
 
-   ![AWSSMJKS Custom Field - OAuthGrantType](docsource/images/AWSSMJKS-custom-field-OAuthGrantType-dialog.png)
-   ![AWSSMJKS Custom Field - OAuthGrantType](docsource/images/AWSSMJKS-custom-field-OAuthGrantType-validation-options-dialog.png)
-
+   ![AWSSMJKS Custom Field - OAuthGrantType](docsource/images/AWSSMJKS-custom-field-OAuthGrantType-dialog.svg)
 
 
    ###### OAuth Url
    The token endpoint for the OAuth 2.0 provider
 
-   ![AWSSMJKS Custom Field - OAuthUrl](docsource/images/AWSSMJKS-custom-field-OAuthUrl-dialog.png)
-   ![AWSSMJKS Custom Field - OAuthUrl](docsource/images/AWSSMJKS-custom-field-OAuthUrl-validation-options-dialog.png)
-
+   ![AWSSMJKS Custom Field - OAuthUrl](docsource/images/AWSSMJKS-custom-field-OAuthUrl-dialog.svg)
 
 
    ###### OAuth Client ID
    The Client ID for OAuth.
 
-   ![AWSSMJKS Custom Field - OAuthClientId](docsource/images/AWSSMJKS-custom-field-OAuthClientId-dialog.png)
-   ![AWSSMJKS Custom Field - OAuthClientId](docsource/images/AWSSMJKS-custom-field-OAuthClientId-validation-options-dialog.png)
-
+   ![AWSSMJKS Custom Field - OAuthClientId](docsource/images/AWSSMJKS-custom-field-OAuthClientId-dialog.svg)
 
 
    ###### OAuth Client Secret
    The Client Secret for OAuth.
 
-   ![AWSSMJKS Custom Field - OAuthClientSecret](docsource/images/AWSSMJKS-custom-field-OAuthClientSecret-dialog.png)
-   ![AWSSMJKS Custom Field - OAuthClientSecret](docsource/images/AWSSMJKS-custom-field-OAuthClientSecret-validation-options-dialog.png)
-
+   ![AWSSMJKS Custom Field - OAuthClientSecret](docsource/images/AWSSMJKS-custom-field-OAuthClientSecret-dialog.svg)
 
 
    ###### Use IAM User Auth
    A switch to enable the store to use IAM User auth to assume a role when authenticating with AWS
 
-   ![AWSSMJKS Custom Field - UseIAM](docsource/images/AWSSMJKS-custom-field-UseIAM-dialog.png)
-   ![AWSSMJKS Custom Field - UseIAM](docsource/images/AWSSMJKS-custom-field-UseIAM-validation-options-dialog.png)
-
+   ![AWSSMJKS Custom Field - UseIAM](docsource/images/AWSSMJKS-custom-field-UseIAM-dialog.svg)
 
 
    ###### IAM User Access Key
    The AWS Access Key for an IAM User
 
-   ![AWSSMJKS Custom Field - IAMUserAccessKey](docsource/images/AWSSMJKS-custom-field-IAMUserAccessKey-dialog.png)
-   ![AWSSMJKS Custom Field - IAMUserAccessKey](docsource/images/AWSSMJKS-custom-field-IAMUserAccessKey-validation-options-dialog.png)
-
+   ![AWSSMJKS Custom Field - IAMUserAccessKey](docsource/images/AWSSMJKS-custom-field-IAMUserAccessKey-dialog.svg)
 
 
    ###### IAM User Access Secret
    The AWS Access Secret for an IAM User.
 
-   ![AWSSMJKS Custom Field - IAMUserAccessSecret](docsource/images/AWSSMJKS-custom-field-IAMUserAccessSecret-dialog.png)
-   ![AWSSMJKS Custom Field - IAMUserAccessSecret](docsource/images/AWSSMJKS-custom-field-IAMUserAccessSecret-validation-options-dialog.png)
-
+   ![AWSSMJKS Custom Field - IAMUserAccessSecret](docsource/images/AWSSMJKS-custom-field-IAMUserAccessSecret-dialog.svg)
 
 
    ###### sts:ExternalId
    An optional parameter sts:ExternalId to pass with Assume Role calls
 
-   ![AWSSMJKS Custom Field - ExternalId](docsource/images/AWSSMJKS-custom-field-ExternalId-dialog.png)
-   ![AWSSMJKS Custom Field - ExternalId](docsource/images/AWSSMJKS-custom-field-ExternalId-validation-options-dialog.png)
-
-
-
+   ![AWSSMJKS Custom Field - ExternalId](docsource/images/AWSSMJKS-custom-field-ExternalId-dialog.svg)
 
 
    ##### Entry Parameters Tab
@@ -1092,22 +977,17 @@ the Keyfactor Command Portal
 
    The Entry Parameters tab should look like this:
 
-   ![AWSSMJKS Entry Parameters Tab](docsource/images/AWSSMJKS-entry-parameters-store-type-dialog.png)
-
-
+   ![AWSSMJKS Entry Parameters Tab](docsource/images/AWSSMJKS-entry-parameters-store-type-dialog.svg)
    ##### Certificate Tags
    If desired, tags can be applied to the certificate entries in AWS Secrets Manager.  Provide them as a JSON string of key-value pairs ie: '{'tag-name': 'tag-content', 'other-tag-name': 'other-tag-content'}'.  Tag values may contain the placeholder tokens %SERIAL_NUMBER%, %NOT_BEFORE%, and %NOT_AFTER%, which are replaced with the certificate's serial number (hexadecimal) and validity dates (ISO-8601 UTC) before the tag is written.
 
-   ![AWSSMJKS Entry Parameter - CertificateTags](docsource/images/AWSSMJKS-entry-parameters-store-type-dialog-CertificateTags.png)
-   ![AWSSMJKS Entry Parameter - CertificateTags](docsource/images/AWSSMJKS-entry-parameters-store-type-dialog-CertificateTags-validation-options.png)
+   ![AWSSMJKS Entry Parameter - CertificateTags](docsource/images/AWSSMJKS-entry-parameters-store-type-dialog-CertificateTags.svg)
 
 
    ##### Replica Regions
    To replicate secrets to other regions, you can provide them here as a JSON array in the format: [{ 'KmsKeyId': '<optionally specify the encryption key ID', 'Region': '<region name>'}, {...}]
 
-   ![AWSSMJKS Entry Parameter - ReplicaRegions](docsource/images/AWSSMJKS-entry-parameters-store-type-dialog-ReplicaRegions.png)
-   ![AWSSMJKS Entry Parameter - ReplicaRegions](docsource/images/AWSSMJKS-entry-parameters-store-type-dialog-ReplicaRegions-validation-options.png)
-
+   ![AWSSMJKS Entry Parameter - ReplicaRegions](docsource/images/AWSSMJKS-entry-parameters-store-type-dialog-ReplicaRegions.svg)
 
 
    </details>
@@ -1118,18 +998,20 @@ the Keyfactor Command Portal
 
 1. **Download the latest AWS Secrets Manager Universal Orchestrator extension from GitHub.**
 
-    Navigate to the [AWS Secrets Manager Universal Orchestrator extension GitHub version page](https://github.com/Keyfactor/aws-secretsmanager-orchestrator/releases/latest). Refer to the compatibility matrix below to determine the asset should be downloaded. Then, click the corresponding asset to download the zip archive.
+    Navigate to the [AWS Secrets Manager Universal Orchestrator extension GitHub version page](https://github.com/Keyfactor/aws-secretsmanager-orchestrator/releases/latest). Refer to the compatibility matrix below to determine which asset should be downloaded. Then, click the corresponding asset to download the zip archive.
 
    | Universal Orchestrator Version | Latest .NET version installed on the Universal Orchestrator server | `rollForward` condition in `Orchestrator.runtimeconfig.json` | `aws-secretsmanager-orchestrator` .NET version to download |
    | --------- | ----------- | ----------- | ----------- |
    | Older than `11.0.0` | | | `net6.0` |
    | Between `11.0.0` and `11.5.1` (inclusive) | `net6.0` | | `net6.0` |
-   | Between `11.0.0` and `11.5.1` (inclusive) | `net8.0` | `Disable` | `net6.0` || Between `11.0.0` and `11.5.1` (inclusive) | `net8.0` | `LatestMajor` | `net8.0` |
-   | `11.6` _and_ newer | `net8.0` | | `net8.0` | 
+   | Between `11.0.0` and `11.5.1` (inclusive) | `net8.0` | `Disable` | `net6.0` |
+   | Between `11.0.0` and `11.5.1` (inclusive) | `net8.0` | `LatestMajor` | `net8.0` |
+   | `11.6` _and_ newer | `net8.0` | | `net8.0` |
+   | `25.5` _and_ newer | `net10.0` | | `net10.0` |
 
     Unzip the archive containing extension assemblies to a known location.
 
-    > **Note** If you don't see an asset with a corresponding .NET version, you should always assume that it was compiled for `net6.0`.
+    > **Note** If you don't see an asset with a corresponding .NET version, you should always assume that it was compiled for `net10.0`.
 
 2. **Locate the Universal Orchestrator extensions directory.**
 
@@ -1147,24 +1029,19 @@ the Keyfactor Command Portal
 
     Refer to [Starting/Restarting the Universal Orchestrator service](https://software.keyfactor.com/Core-OnPrem/Current/Content/InstallingAgents/NetCoreOrchestrator/StarttheService.htm).
 
-
 6. **(optional) PAM Integration**
 
     The AWS Secrets Manager Universal Orchestrator extension is compatible with all supported Keyfactor PAM extensions to resolve PAM-eligible secrets. PAM extensions running on Universal Orchestrators enable secure retrieval of secrets from a connected PAM provider.
 
     To configure a PAM provider, [reference the Keyfactor Integration Catalog](https://keyfactor.github.io/integrations-catalog/content/pam) to select an extension and follow the associated instructions to install it on the Universal Orchestrator (remote).
 
-
 > The above installation steps can be supplemented by the [official Command documentation](https://software.keyfactor.com/Core-OnPrem/Current/Content/InstallingAgents/NetCoreOrchestrator/CustomExtensions.htm?Highlight=extensions).
-
-
 
 ## Defining Certificate Stores
 
 The AWS Secrets Manager Universal Orchestrator extension implements 3 Certificate Store Types, each of which implements different functionality. Refer to the individual instructions below for each Certificate Store Type that you deemed necessary for your use case from the installation section.
 
 <details><summary>AwsSecretsManager PEM (AWSSMPEM)</summary>
-
 
 ### Store Creation
 
@@ -1180,8 +1057,8 @@ The AWS Secrets Manager Universal Orchestrator extension implements 3 Certificat
 
     Click the Add button to add a new Certificate Store. Use the table below to populate the **Attributes** in the **Add** form.
 
-   | Attribute | Description                                             |
-   | --------- |---------------------------------------------------------|
+   | Attribute | Description |
+   | --------- | ----------- |
    | Category | Select "AwsSecretsManager PEM" or the customized certificate store name from the previous step. |
    | Container | Optional container to associate certificate store with. |
    | Client Machine |  |
@@ -1203,8 +1080,6 @@ The AWS Secrets Manager Universal Orchestrator extension implements 3 Certificat
    | ExternalId | An optional parameter sts:ExternalId to pass with Assume Role calls |
 
 </details>
-
-
 
 #### Using kfutil CLI
 
@@ -1249,7 +1124,6 @@ The AWS Secrets Manager Universal Orchestrator extension implements 3 Certificat
 
 </details>
 
-
 #### PAM Provider Eligible Fields
 <details><summary>Attributes eligible for retrieval by a PAM Provider on the Universal Orchestrator</summary>
 
@@ -1267,14 +1141,11 @@ Please refer to the **Universal Orchestrator (remote)** usage section ([PAM prov
 
 </details>
 
-
 > The content in this section can be supplemented by the [official Command documentation](https://software.keyfactor.com/Core-OnPrem/Current/Content/ReferenceGuide/Certificate%20Stores.htm?Highlight=certificate%20store).
-
 
 </details>
 
 <details><summary>AwsSecretsManager PFX (AWSSMPFX)</summary>
-
 
 ### Store Creation
 
@@ -1290,8 +1161,8 @@ Please refer to the **Universal Orchestrator (remote)** usage section ([PAM prov
 
     Click the Add button to add a new Certificate Store. Use the table below to populate the **Attributes** in the **Add** form.
 
-   | Attribute | Description                                             |
-   | --------- |---------------------------------------------------------|
+   | Attribute | Description |
+   | --------- | ----------- |
    | Category | Select "AwsSecretsManager PFX" or the customized certificate store name from the previous step. |
    | Container | Optional container to associate certificate store with. |
    | Client Machine |  |
@@ -1311,8 +1182,6 @@ Please refer to the **Universal Orchestrator (remote)** usage section ([PAM prov
    | ExternalId | An optional parameter sts:ExternalId to pass with Assume Role calls |
 
 </details>
-
-
 
 #### Using kfutil CLI
 
@@ -1355,7 +1224,6 @@ Please refer to the **Universal Orchestrator (remote)** usage section ([PAM prov
 
 </details>
 
-
 #### PAM Provider Eligible Fields
 <details><summary>Attributes eligible for retrieval by a PAM Provider on the Universal Orchestrator</summary>
 
@@ -1373,14 +1241,11 @@ Please refer to the **Universal Orchestrator (remote)** usage section ([PAM prov
 
 </details>
 
-
 > The content in this section can be supplemented by the [official Command documentation](https://software.keyfactor.com/Core-OnPrem/Current/Content/ReferenceGuide/Certificate%20Stores.htm?Highlight=certificate%20store).
-
 
 </details>
 
 <details><summary>AwsSecretsManager JKS (AWSSMJKS)</summary>
-
 
 ### Store Creation
 
@@ -1396,8 +1261,8 @@ Please refer to the **Universal Orchestrator (remote)** usage section ([PAM prov
 
     Click the Add button to add a new Certificate Store. Use the table below to populate the **Attributes** in the **Add** form.
 
-   | Attribute | Description                                             |
-   | --------- |---------------------------------------------------------|
+   | Attribute | Description |
+   | --------- | ----------- |
    | Category | Select "AwsSecretsManager JKS" or the customized certificate store name from the previous step. |
    | Container | Optional container to associate certificate store with. |
    | Client Machine |  |
@@ -1417,8 +1282,6 @@ Please refer to the **Universal Orchestrator (remote)** usage section ([PAM prov
    | ExternalId | An optional parameter sts:ExternalId to pass with Assume Role calls |
 
 </details>
-
-
 
 #### Using kfutil CLI
 
@@ -1461,7 +1324,6 @@ Please refer to the **Universal Orchestrator (remote)** usage section ([PAM prov
 
 </details>
 
-
 #### PAM Provider Eligible Fields
 <details><summary>Attributes eligible for retrieval by a PAM Provider on the Universal Orchestrator</summary>
 
@@ -1479,13 +1341,9 @@ Please refer to the **Universal Orchestrator (remote)** usage section ([PAM prov
 
 </details>
 
-
 > The content in this section can be supplemented by the [official Command documentation](https://software.keyfactor.com/Core-OnPrem/Current/Content/ReferenceGuide/Certificate%20Stores.htm?Highlight=certificate%20store).
 
-
 </details>
-
-
 
 
 ## License
