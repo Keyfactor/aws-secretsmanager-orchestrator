@@ -14,9 +14,9 @@ using Xunit;
 namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Tests
 {
     /// <summary>
-    /// Verifies that the SeparatePrivateKey store-type custom field is read out of the
-    /// serialized store Properties JSON, tolerant of the various shapes Command may use
-    /// to serialize a boolean custom field.
+    /// Verifies that the SeparatePrivateKey and IncludeChain store-type custom fields are read
+    /// out of the serialized store Properties JSON, tolerant of the various shapes Command may
+    /// use to serialize a boolean custom field.
     /// </summary>
     public class JobBaseSeparatePrivateKeyTests
     {
@@ -74,6 +74,47 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Tests
         public void SeparatePrivateKey_ParsesFalse(string properties)
         {
             InvokeSetStoreProperties(properties).SeparatePrivateKey.Should().BeFalse();
+        }
+
+        // IncludeChain uses the same parsing path; an absent field must read as false so that
+        // stores created before the field existed keep the leaf-only format after upgrade.
+
+        [Fact]
+        public void IncludeChain_DefaultsToFalse_WhenAbsent()
+        {
+            InvokeSetStoreProperties("{\"SeparatePrivateKey\":\"false\"}").IncludeChain.Should().BeFalse();
+        }
+
+        [Theory]
+        [InlineData("{\"IncludeChain\":true}")]
+        [InlineData("{\"IncludeChain\":\"true\"}")]
+        [InlineData("{\"IncludeChain\":\"True\"}")]
+        [InlineData("{\"IncludeChain\":{\"value\":\"true\"}}")]
+        [InlineData("{\"includechain\":\"true\"}")] // case-insensitive name match
+        public void IncludeChain_ParsesTrue(string properties)
+        {
+            InvokeSetStoreProperties(properties).IncludeChain.Should().BeTrue();
+        }
+
+        [Theory]
+        [InlineData("{\"IncludeChain\":false}")]
+        [InlineData("{\"IncludeChain\":\"false\"}")]
+        [InlineData("{\"IncludeChain\":\"\"}")]
+        [InlineData("{\"IncludeChain\":null}")]
+        [InlineData("")]
+        [InlineData("not valid json")]
+        public void IncludeChain_ParsesFalse(string properties)
+        {
+            InvokeSetStoreProperties(properties).IncludeChain.Should().BeFalse();
+        }
+
+        [Fact]
+        public void IncludeChain_AndSeparatePrivateKey_AreParsedIndependently()
+        {
+            var props = InvokeSetStoreProperties("{\"SeparatePrivateKey\":\"true\",\"IncludeChain\":\"true\"}");
+
+            props.SeparatePrivateKey.Should().BeTrue();
+            props.IncludeChain.Should().BeTrue();
         }
     }
 }
