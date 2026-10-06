@@ -82,12 +82,17 @@ the authentication credentials has access to.
 
 Here is a list of the IAM actions that the authenticating identity should have in order to perform all Jobs supported by this extension:
 
-- `secretsmanager.ListSecrets`
-- `secretsManager.GetSecretValue` 
+- `secretsmanager:ListSecrets`
+- `secretsmanager:GetSecretValue`
+- `secretsmanager:BatchGetSecretValue`
+- `secretsmanager:DescribeSecret`
 - `secretsmanager:CreateSecret`
-- `secretsmanager.DeleteSecret` 
-- `secretsmanager.UpdateSecret`
-- `secretsmanager.TagResource`  _if using tags for filtering or to add tags via entry parameters._
+- `secretsmanager:DeleteSecret`
+- `secretsmanager:UpdateSecret`
+- `secretsmanager:TagResource`  _if using tags for filtering or to add tags via entry parameters._
+- `secretsmanager:UntagResource`  _if using tags for filtering or to add tags via entry parameters; used to replace existing tags when a certificate is renewed or overwritten._
+- `secretsmanager:ReplicateSecretToRegions`  _if using the ReplicaRegions entry parameter._
+- `secretsmanager:RemoveRegionsFromReplication`  _if using the ReplicaRegions entry parameter; used to remove regions no longer listed when a certificate is renewed or overwritten._
 
 For more information on these permission actions, refer to the [AWS Documentation](https://docs.aws.amazon.com/service-authorization/latest/reference/list_awssecretsmanager.html).
 
@@ -168,6 +173,29 @@ For this certificate store type, the certificates are expected to be stored as a
 
 When enrolling a certificate from Keyfactor Command into the Certificate Store with this type (AWSSMPEM), it will be stored as a PEM
 formatted string, including the private key, with no seperate password.
+
+###### Including the certificate chain in the PEM secret
+
+By default, the concatenated PEM secret contains only the leaf certificate followed by its private key. The AWSSMPEM store type includes an optional `IncludeChain` custom field. When it is enabled, the secret contains the leaf certificate, followed by the issuer chain (leaf first), followed by the private key:
+
+```
+-----BEGIN CERTIFICATE-----
+<leaf certificate>
+-----END CERTIFICATE-----
+-----BEGIN CERTIFICATE-----
+<issuing CA certificate>
+-----END CERTIFICATE-----
+...
+-----BEGIN PRIVATE KEY-----
+<PKCS#8 private key>
+-----END PRIVATE KEY-----
+```
+
+A few things to note:
+- `IncludeChain` only applies when `SeparatePrivateKey` is disabled. The JSON format described below always includes the chain in its `certificate` property, so `IncludeChain` is ignored when `SeparatePrivateKey` is enabled.
+- The chain written is the chain delivered by Keyfactor Command with the certificate, which may include the root CA certificate.
+- The setting applies when a certificate is added or renewed. Existing secrets are not rewritten when the option is changed; they pick up the new format the next time they are added or renewed. Inventory reads both formats.
+- Existing AWSSMPEM store types created before this option was introduced do not include the field. Stores without the field behave exactly as before (leaf and key only). To use the option, add the `IncludeChain` property to the store type definition.
 
 ###### Storing the certificate and private key as separate JSON properties
 
@@ -290,6 +318,7 @@ the Keyfactor Command Portal
    | Name | Display Name | Description | Type | Default Value/Options | Required |
    | ---- | ------------ | ---- | --------------------- | -------- | ----------- |
    | SeparatePrivateKey | Store as JSON with separate private key | When enabled, the certificate is stored as a JSON document with separate 'certificate' (PEM certificate and chain, leaf first) and 'private_key' (PEM) properties, rather than a single concatenated PEM string. | Bool | false | 🔲 Unchecked |
+   | IncludeChain | Include certificate chain in PEM | When enabled, the single concatenated PEM secret contains the leaf certificate, followed by the issuer chain (leaf first), followed by the private key. Only applies when 'Store as JSON with separate private key' is disabled; the JSON format always includes the chain. | Bool | false | 🔲 Unchecked |
    | UseDefaultSdkAuth | Use Default SDK Auth | A switch to enable the store to use Default SDK credentials | Bool | false | ✅ Checked |
    | DefaultSdkAssumeRole | Assume new Role using Default SDK Auth | A switch to enable the store to assume a new Role when using Default SDK credentials | Bool | false | 🔲 Unchecked |
    | UseOAuth | Use OAuth 2.0 Provider | A switch to enable the store to use an OAuth provider workflow to authenticate with AWS | Bool | false | ✅ Checked |
@@ -313,6 +342,14 @@ the Keyfactor Command Portal
 
    ![AWSSMPEM Custom Field - SeparatePrivateKey](docsource/images/AWSSMPEM-custom-field-SeparatePrivateKey-dialog.png)
    ![AWSSMPEM Custom Field - SeparatePrivateKey](docsource/images/AWSSMPEM-custom-field-SeparatePrivateKey-validation-options-dialog.png)
+
+
+
+   ###### Include certificate chain in PEM
+   When enabled, the single concatenated PEM secret contains the leaf certificate, followed by the issuer chain (leaf first), followed by the private key. Only applies when 'Store as JSON with separate private key' is disabled; the JSON format always includes the chain.
+
+   ![AWSSMPEM Custom Field - IncludeChain](docsource/images/AWSSMPEM-custom-field-IncludeChain-dialog.png)
+   ![AWSSMPEM Custom Field - IncludeChain](docsource/images/AWSSMPEM-custom-field-IncludeChain-validation-options-dialog.png)
 
 
 
@@ -1151,6 +1188,7 @@ The AWS Secrets Manager Universal Orchestrator extension implements 3 Certificat
    | Store Path | The store path contains the AWS region where the SecretsManager resides.  It can optionally accept values for tags OR path prefix for identifying secrets to be managed by the cert store instance.  example:'us-east-2 [prefix='dev/midwest']' or 'us-east1 [tagName='managedBy' tagValue='keyfactor']'  |
    | Orchestrator | Select an approved orchestrator capable of managing `AWSSMPEM` certificates. Specifically, one with the `AWSSMPEM` capability. |
    | SeparatePrivateKey | When enabled, the certificate is stored as a JSON document with separate 'certificate' (PEM certificate and chain, leaf first) and 'private_key' (PEM) properties, rather than a single concatenated PEM string. |
+   | IncludeChain | When enabled, the single concatenated PEM secret contains the leaf certificate, followed by the issuer chain (leaf first), followed by the private key. Only applies when 'Store as JSON with separate private key' is disabled; the JSON format always includes the chain. |
    | UseDefaultSdkAuth | A switch to enable the store to use Default SDK credentials |
    | DefaultSdkAssumeRole | A switch to enable the store to assume a new Role when using Default SDK credentials |
    | UseOAuth | A switch to enable the store to use an OAuth provider workflow to authenticate with AWS |
@@ -1189,6 +1227,7 @@ The AWS Secrets Manager Universal Orchestrator extension implements 3 Certificat
    | Store Path | The store path contains the AWS region where the SecretsManager resides.  It can optionally accept values for tags OR path prefix for identifying secrets to be managed by the cert store instance.  example:'us-east-2 [prefix='dev/midwest']' or 'us-east1 [tagName='managedBy' tagValue='keyfactor']'  |
    | Orchestrator | Select an approved orchestrator capable of managing `AWSSMPEM` certificates. Specifically, one with the `AWSSMPEM` capability. |
    | Properties.SeparatePrivateKey | When enabled, the certificate is stored as a JSON document with separate 'certificate' (PEM certificate and chain, leaf first) and 'private_key' (PEM) properties, rather than a single concatenated PEM string. |
+   | Properties.IncludeChain | When enabled, the single concatenated PEM secret contains the leaf certificate, followed by the issuer chain (leaf first), followed by the private key. Only applies when 'Store as JSON with separate private key' is disabled; the JSON format always includes the chain. |
    | Properties.UseDefaultSdkAuth | A switch to enable the store to use Default SDK credentials |
    | Properties.DefaultSdkAssumeRole | A switch to enable the store to assume a new Role when using Default SDK credentials |
    | Properties.UseOAuth | A switch to enable the store to use an OAuth provider workflow to authenticate with AWS |

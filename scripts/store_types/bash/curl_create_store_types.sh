@@ -95,6 +95,15 @@ create_store_type "AWSSMPEM" '{
       "IsPAMEligible": false
     },
     {
+      "Name": "IncludeChain",
+      "DisplayName": "Include certificate chain in PEM",
+      "Type": "Bool",
+      "DependsOn": "",
+      "DefaultValue": "false",
+      "Required": false,
+      "IsPAMEligible": false
+    },
+    {
       "Name": "UseDefaultSdkAuth",
       "DisplayName": "Use Default SDK Auth",
       "Type": "Bool",
