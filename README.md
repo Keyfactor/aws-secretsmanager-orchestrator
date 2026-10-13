@@ -340,6 +340,14 @@ the Keyfactor Command Portal
    ![AWSSMPEM Custom Field - IncludeChain](docsource/images/AWSSMPEM-custom-field-IncludeChain-validation-options-dialog.svg)
 
 
+   ###### Include certificate chain in PEM
+   When enabled, the single concatenated PEM secret contains the leaf certificate, followed by the issuer chain (leaf first), followed by the private key. Only applies when 'Store as JSON with separate private key' is disabled; the JSON format always includes the chain.
+
+   ![AWSSMPEM Custom Field - IncludeChain](docsource/images/AWSSMPEM-custom-field-IncludeChain-dialog.png)
+   ![AWSSMPEM Custom Field - IncludeChain](docsource/images/AWSSMPEM-custom-field-IncludeChain-validation-options-dialog.png)
+
+
+
    ###### Use Default SDK Auth
    A switch to enable the store to use Default SDK credentials
 
@@ -523,6 +531,8 @@ In summary; supplying a name prefix or tag name and value as part of a certifica
 - A tag will be added to the first secret called "PasswordSecret" and will contain the name of the secret containing the password.
 - If a "prefix" is defined in the store path, it will be prepended to the names of both secrets.
 - If a "TagName" and optional "TagValue" are provided in the store path, those tags will be added to the certificate secret.
+- If a "KmsKeyId" or "ReplicaRegions" entry parameter is provided, it is applied to both the certificate secret and the \<alias\>-pw secret.
+- When an existing certificate is replaced, the \<alias\>-pw secret is updated with the new PFX password.
 
 ##### Example
 Enrolling a certificate with the alias "mycert" into a AWSSMPFX certificate store that has a store path value of "us-east-2 [prefix="devteam"]" will result in the following..
@@ -816,6 +826,8 @@ In summary; supplying a name prefix or tag name and value as part of a certifica
 - A tag will be added to the first secret called "PasswordSecret" and will contain the name of the secret containing the password.
 - If a "prefix" is defined in the store path, it will be prepended to the names of both secrets.
 - If a "TagName" and optional "TagValue" are provided in the store path, those tags will be added to the certificate secret.
+- If a "KmsKeyId" or "ReplicaRegions" entry parameter is provided, it is applied to both the certificate secret and the \<alias\>-pw secret.
+- When an existing certificate is replaced, the \<alias\>-pw secret is updated with the new JKS password.
 
 ##### Example
 Enrolling a certificate with the alias "mycert" into a AWSSMJKS certificate store that has a store path value of "us-east-2 [prefix="devteam"]" will result in the following..
