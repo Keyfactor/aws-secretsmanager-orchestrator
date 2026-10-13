@@ -1,3 +1,7 @@
+## 1.2.1
+* AWSSMPFX / AWSSMJKS - Fixed the password secret (`<alias>-pw`) ignoring the `KmsKeyId` entry parameter; it was always encrypted with the default `aws/secretsmanager` key. It is now encrypted with the same KMS key as the certificate secret, and is also replicated to the regions provided in `ReplicaRegions`.
+* AWSSMPFX / AWSSMJKS - Fixed the password secret value not being updated when an existing certificate was renewed or overwritten, which left the stored password out of sync with the new PFX / JKS store.
+
 ## 1.2.0
 * AWSSMPEM - New optional store type parameter `IncludeChain` (default false) to include the issuer chain in the single concatenated PEM secret (leaf, then chain, then private key). Ignored when `SeparatePrivateKey` is enabled, as the JSON format already includes the chain. Stores without the parameter behave as before.
 * Added .NET 10 as a target framework.
