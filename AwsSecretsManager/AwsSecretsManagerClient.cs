@@ -103,26 +103,32 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
             try
             {
                 _logger.LogTrace($"begin batch retreival of (up to 20) secret values..");
-                do
-                {
-                    if (secretNames.Count < 1) continue;
 
+                // BatchGetSecretValue's SecretIdList accepts a maximum of 20 entries per call,
+                // so secretNames must be chunked rather than passed in a single request.
+                foreach (var secretNameBatch in secretNames.Chunk(20))
+                {
                     var request = new BatchGetSecretValueRequest
                     {
-                        SecretIdList = secretNames
+                        SecretIdList = secretNameBatch.ToList()
                     };
 
-                    var response = await _secretsManagerClient.BatchGetSecretValueAsync(request);                    
+                    nextToken = null;
+                    do
+                    {
+                        request.NextToken = nextToken;
 
-                    var secrets = response.SecretValues;
+                        var response = await _secretsManagerClient.BatchGetSecretValueAsync(request);
 
-                    secretContents.AddRange(response.SecretValues);
+                        secretContents.AddRange(response.SecretValues);
 
-                    nextToken = response.NextToken;
-                    _logger.LogTrace($"got {response.SecretValues.Count} secret value entries.");
+                        nextToken = response.NextToken;
+                        _logger.LogTrace($"got {response.SecretValues.Count} secret value entries.");
+                    }
+                    while (nextToken != null);
+
                     _logger.LogTrace("retreiving next batch of up to 20 entries..");
                 }
-                while (nextToken != null);
                 _logger.LogTrace("completed secret value retreival");
             }
             catch (Exception ex)
