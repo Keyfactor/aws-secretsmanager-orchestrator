@@ -1,3 +1,6 @@
+## 1.2.2 
+* Enforcing batch retrieval of 20 secrets at a time in AWSSMPEM, AWSSMPFX, and AWSSMJKS to avoid throttling issues when retrieving multiple secrets at once. The `secretsmanager:BatchGetSecretValue` IAM action is now required for all three store types.
+
 ## 1.2.1
 * AWSSMPFX / AWSSMJKS - Fixed the password secret (`<alias>-pw`) ignoring the `KmsKeyId` entry parameter; it was always encrypted with the default `aws/secretsmanager` key. It is now encrypted with the same KMS key as the certificate secret, and is also replicated to the regions provided in `ReplicaRegions`.
 * AWSSMPFX / AWSSMJKS - Fixed the password secret value not being updated when an existing certificate was renewed or overwritten, which left the stored password out of sync with the new PFX / JKS store.
