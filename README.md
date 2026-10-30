@@ -340,14 +340,6 @@ the Keyfactor Command Portal
    ![AWSSMPEM Custom Field - IncludeChain](docsource/images/AWSSMPEM-custom-field-IncludeChain-validation-options-dialog.svg)
 
 
-   ###### Include certificate chain in PEM
-   When enabled, the single concatenated PEM secret contains the leaf certificate, followed by the issuer chain (leaf first), followed by the private key. Only applies when 'Store as JSON with separate private key' is disabled; the JSON format always includes the chain.
-
-   ![AWSSMPEM Custom Field - IncludeChain](docsource/images/AWSSMPEM-custom-field-IncludeChain-dialog.png)
-   ![AWSSMPEM Custom Field - IncludeChain](docsource/images/AWSSMPEM-custom-field-IncludeChain-validation-options-dialog.png)
-
-
-
    ###### Use Default SDK Auth
    A switch to enable the store to use Default SDK credentials
 

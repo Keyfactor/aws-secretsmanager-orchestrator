@@ -48,15 +48,6 @@ curl -s -X POST "https://${KEYFACTOR_HOSTNAME}/${KEYFACTOR_API_PATH}/Certificate
       "Description": "When enabled, the single concatenated PEM secret contains the leaf certificate, followed by the issuer chain (leaf first), followed by the private key. Only applies when 'Store as JSON with separate private key' is disabled; the JSON format always includes the chain."
     },
     {
-      "Name": "IncludeChain",
-      "DisplayName": "Include certificate chain in PEM",
-      "Type": "Bool",
-      "DependsOn": "",
-      "DefaultValue": "false",
-      "Required": false,
-      "IsPAMEligible": false
-    },
-    {
       "Name": "UseDefaultSdkAuth",
       "DisplayName": "Use Default SDK Auth",
       "Type": "Bool",
