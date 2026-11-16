@@ -322,7 +322,7 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager.Jobs
             _logger.LogTrace($"loading certificate properties..");
 
             // get KmsKeyId (to use an encryption key other than the default)
-            JobParameters.CertProperties.KmsKeyId = jobProperties.ContainsKey("KmsKeyId") ? jobProperties["KmsKeyId"]?.ToString() : null;
+            JobParameters.CertProperties.KmsKeyId = jobProperties.ContainsKey(EntryParameterKeys.KMSKEYID) ? jobProperties[EntryParameterKeys.KMSKEYID]?.ToString() : null;
             JobParameters.CertProperties.Overwrite = overwrite;
             JobParameters.CertProperties.Alias = certProperties.Alias;
             JobParameters.CertProperties.PrivateKeyPassword = certProperties.PrivateKeyPassword;

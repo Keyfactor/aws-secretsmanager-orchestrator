@@ -1,3 +1,7 @@
+## 1.2.3
+* Added the `KmsKeyId` entry parameter to the AWSSMPEM, AWSSMPFX, and AWSSMJKS store types. The orchestrator already used this value to encrypt the secret with a customer managed KMS key (and, for AWSSMPFX / AWSSMJKS, the `<alias>-pw` password secret), but the parameter was never defined on the store types, so it was only sent by Command if it had been added to the store type manually. Existing store types must be updated in Command to add the parameter; store types that already define an entry parameter named `KmsKeyId` do not need to change.
+* Documentation - added the `kms:GenerateDataKey` and `kms:Decrypt` permissions required when a customer managed KMS key is specified.
+
 ## 1.2.2 
 * Enforcing batch retrieval of 20 secrets at a time in AWSSMPEM, AWSSMPFX, and AWSSMJKS to avoid throttling issues when retrieving multiple secrets at once. The `secretsmanager:BatchGetSecretValue` IAM action is now required for all three store types.
 
