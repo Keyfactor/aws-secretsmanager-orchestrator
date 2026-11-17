@@ -3,13 +3,12 @@
   "name": "AWS Secrets Manager",
   "description": "This orchestrator extension allows managing Certificates stored in AWS Secrets Manager",
   "integration_type": "orchestrator",
-  "link_github": true,
-  "release_dir": "AwsSecretsManager/bin/Release",
-  "release_project": "AwsSecretsManager/AwsSecretsManager.csproj",
   "status": "prototype",
   "support_level": "community",
+  "link_github": true,
   "update_catalog": true,
-
+  "release_project": "AwsSecretsManager/AwsSecretsManager.csproj",
+  "release_dir": "AwsSecretsManager/bin/Release",
   "about": {
     "orchestrator": {
       "UOFramework": "10.1",
