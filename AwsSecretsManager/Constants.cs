@@ -53,6 +53,7 @@ namespace Keyfactor.Extensions.Orchestrators.AwsSecretsManager
     {
         public const string TAGS = "CertificateTags";
         public const string REPLICAREGIONS = "ReplicaRegions";
+        public const string KMSKEYID = "KmsKeyId";
     }
 
     public static class TagNames
