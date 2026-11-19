@@ -41,6 +41,8 @@ Here is a list of the IAM actions that the authenticating identity should have i
 - `secretsmanager:ReplicateSecretToRegions`  _if using the ReplicaRegions entry parameter._
 - `secretsmanager:RemoveRegionsFromReplication`  _if using the ReplicaRegions entry parameter; used to remove regions no longer listed when a certificate is renewed or overwritten._
 
+If the `KmsKeyId` entry parameter (or a `KmsKeyId` in the `ReplicaRegions` entry parameter) specifies a customer managed KMS key, the authenticating identity also needs `kms:GenerateDataKey` and `kms:Decrypt` on that key, granted in the key policy or an IAM policy.  When `KmsKeyId` is not provided, the AWS managed key (`aws/secretsmanager`) is used and no additional KMS permissions are needed.
+
 For more information on these permission actions, refer to the [AWS Documentation](https://docs.aws.amazon.com/service-authorization/latest/reference/list_awssecretsmanager.html).
 
 For more information on how best to secure your AWS Secrets Manager secrets, refer to [this document](https://docs.aws.amazon.com/secretsmanager/latest/userguide/auth-and-access.html).

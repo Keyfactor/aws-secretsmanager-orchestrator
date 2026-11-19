@@ -194,6 +194,19 @@ $Body = @'
         "OnReenrollment": false
       },
       "DefaultValue": ""
+    },
+    {
+      "Name": "KmsKeyId",
+      "DisplayName": "KMS Key ID",
+      "Description": "The ID, ARN, alias name (alias/<name>), or alias ARN of the AWS KMS key used to encrypt the secret in the primary region. If not provided, the AWS managed key (aws/secretsmanager) is used. To specify the key used by a replica region, use the KmsKeyId property in the ReplicaRegions entry parameter instead.",
+      "Type": "string",
+      "RequiredWhen": {
+        "HasPrivateKey": false,
+        "OnAdd": false,
+        "OnRemove": false,
+        "OnReenrollment": false
+      },
+      "DefaultValue": ""
     }
   ],
   "PasswordOptions": {
@@ -376,6 +389,19 @@ $Body = @'
         "OnReenrollment": false
       },
       "DefaultValue": ""
+    },
+    {
+      "Name": "KmsKeyId",
+      "DisplayName": "KMS Key ID",
+      "Description": "The ID, ARN, alias name (alias/<name>), or alias ARN of the AWS KMS key used to encrypt the certificate secret and the <alias>-pw password secret in the primary region. If not provided, the AWS managed key (aws/secretsmanager) is used. To specify the key used by a replica region, use the KmsKeyId property in the ReplicaRegions entry parameter instead.",
+      "Type": "string",
+      "RequiredWhen": {
+        "HasPrivateKey": false,
+        "OnAdd": false,
+        "OnRemove": false,
+        "OnReenrollment": false
+      },
+      "DefaultValue": ""
     }
   ],
   "PasswordOptions": {
@@ -550,6 +576,19 @@ $Body = @'
       "Name": "ReplicaRegions",
       "DisplayName": "Replica Regions",
       "Description": "To replicate secrets to other regions, you can provide them here as a JSON array in the format: [{ 'KmsKeyId': '<optionally specify the encryption key ID', 'Region': '<region name>'}, {...}]",
+      "Type": "string",
+      "RequiredWhen": {
+        "HasPrivateKey": false,
+        "OnAdd": false,
+        "OnRemove": false,
+        "OnReenrollment": false
+      },
+      "DefaultValue": ""
+    },
+    {
+      "Name": "KmsKeyId",
+      "DisplayName": "KMS Key ID",
+      "Description": "The ID, ARN, alias name (alias/<name>), or alias ARN of the AWS KMS key used to encrypt the certificate secret and the <alias>-pw password secret in the primary region. If not provided, the AWS managed key (aws/secretsmanager) is used. To specify the key used by a replica region, use the KmsKeyId property in the ReplicaRegions entry parameter instead.",
       "Type": "string",
       "RequiredWhen": {
         "HasPrivateKey": false,

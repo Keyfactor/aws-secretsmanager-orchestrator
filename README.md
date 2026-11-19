@@ -90,6 +90,8 @@ Here is a list of the IAM actions that the authenticating identity should have i
 - `secretsmanager:ReplicateSecretToRegions`  _if using the ReplicaRegions entry parameter._
 - `secretsmanager:RemoveRegionsFromReplication`  _if using the ReplicaRegions entry parameter; used to remove regions no longer listed when a certificate is renewed or overwritten._
 
+If the `KmsKeyId` entry parameter (or a `KmsKeyId` in the `ReplicaRegions` entry parameter) specifies a customer managed KMS key, the authenticating identity also needs `kms:GenerateDataKey` and `kms:Decrypt` on that key, granted in the key policy or an IAM policy.  When `KmsKeyId` is not provided, the AWS managed key (`aws/secretsmanager`) is used and no additional KMS permissions are needed.
+
 For more information on these permission actions, refer to the [AWS Documentation](https://docs.aws.amazon.com/service-authorization/latest/reference/list_awssecretsmanager.html).
 
 For more information on how best to secure your AWS Secrets Manager secrets, refer to [this document](https://docs.aws.amazon.com/secretsmanager/latest/userguide/auth-and-access.html).
@@ -430,6 +432,7 @@ the Keyfactor Command Portal
    | ---- | ------------ | ---- | ------------- | ----------------------- | ---------------- | ----------------- | ------------------- | ----------- |
    | CertificateTags | Certificate Tags | If desired, tags can be applied to the certificate entries in AWS Secrets Manager.  Provide them as a JSON string of key-value pairs ie: '{'tag-name': 'tag-content', 'other-tag-name': 'other-tag-content'}'.  Tag values may contain the placeholder tokens %SERIAL_NUMBER%, %NOT_BEFORE%, and %NOT_AFTER%, which are replaced with the certificate's serial number (hexadecimal) and validity dates (ISO-8601 UTC) before the tag is written. | string |  | 🔲 Unchecked | 🔲 Unchecked | 🔲 Unchecked | 🔲 Unchecked |
    | ReplicaRegions | Replica Regions | To replicate secrets to other regions, you can provide them here as a JSON array in the format: [{ 'KmsKeyId': '<optionally specify the encryption key ID', 'Region': '<region name>'}, {...}] | string |  | 🔲 Unchecked | 🔲 Unchecked | 🔲 Unchecked | 🔲 Unchecked |
+   | KmsKeyId | KMS Key ID | The ID, ARN, alias name (alias/<name>), or alias ARN of the AWS KMS key used to encrypt the secret in the primary region. If not provided, the AWS managed key (aws/secretsmanager) is used. To specify the key used by a replica region, use the KmsKeyId property in the ReplicaRegions entry parameter instead. | string |  | 🔲 Unchecked | 🔲 Unchecked | 🔲 Unchecked | 🔲 Unchecked |
 
    The Entry Parameters tab should look like this:
 
@@ -446,6 +449,13 @@ the Keyfactor Command Portal
 
    ![AWSSMPEM Entry Parameter - ReplicaRegions](docsource/images/AWSSMPEM-entry-parameters-store-type-dialog-ReplicaRegions.svg)
    ![AWSSMPEM Entry Parameter - ReplicaRegions](docsource/images/AWSSMPEM-entry-parameters-store-type-dialog-ReplicaRegions-validation-options.svg)
+
+
+   ##### KMS Key ID
+   The ID, ARN, alias name (alias/<name>), or alias ARN of the AWS KMS key used to encrypt the secret in the primary region. If not provided, the AWS managed key (aws/secretsmanager) is used. To specify the key used by a replica region, use the KmsKeyId property in the ReplicaRegions entry parameter instead.
+
+   ![AWSSMPEM Entry Parameter - KmsKeyId](docsource/images/AWSSMPEM-entry-parameters-store-type-dialog-KmsKeyId.svg)
+   ![AWSSMPEM Entry Parameter - KmsKeyId](docsource/images/AWSSMPEM-entry-parameters-store-type-dialog-KmsKeyId-validation-options.svg)
 
 
    </details>
@@ -725,6 +735,7 @@ the Keyfactor Command Portal
    | ---- | ------------ | ---- | ------------- | ----------------------- | ---------------- | ----------------- | ------------------- | ----------- |
    | CertificateTags | Certificate Tags | If desired, tags can be applied to the certificate entries in AWS Secrets Manager.  Provide them as a JSON string of key-value pairs ie: '{'tag-name': 'tag-content', 'other-tag-name': 'other-tag-content'}'.  Tag values may contain the placeholder tokens %SERIAL_NUMBER%, %NOT_BEFORE%, and %NOT_AFTER%, which are replaced with the certificate's serial number (hexadecimal) and validity dates (ISO-8601 UTC) before the tag is written. | string |  | 🔲 Unchecked | 🔲 Unchecked | 🔲 Unchecked | 🔲 Unchecked |
    | ReplicaRegions | Replica Regions | To replicate secrets to other regions, you can provide them here as a JSON array in the format: [{ 'KmsKeyId': '<optionally specify the encryption key ID', 'Region': '<region name>'}, {...}] | string |  | 🔲 Unchecked | 🔲 Unchecked | 🔲 Unchecked | 🔲 Unchecked |
+   | KmsKeyId | KMS Key ID | The ID, ARN, alias name (alias/<name>), or alias ARN of the AWS KMS key used to encrypt the certificate secret and the <alias>-pw password secret in the primary region. If not provided, the AWS managed key (aws/secretsmanager) is used. To specify the key used by a replica region, use the KmsKeyId property in the ReplicaRegions entry parameter instead. | string |  | 🔲 Unchecked | 🔲 Unchecked | 🔲 Unchecked | 🔲 Unchecked |
 
    The Entry Parameters tab should look like this:
 
@@ -741,6 +752,13 @@ the Keyfactor Command Portal
 
    ![AWSSMPFX Entry Parameter - ReplicaRegions](docsource/images/AWSSMPFX-entry-parameters-store-type-dialog-ReplicaRegions.svg)
    ![AWSSMPFX Entry Parameter - ReplicaRegions](docsource/images/AWSSMPFX-entry-parameters-store-type-dialog-ReplicaRegions-validation-options.svg)
+
+
+   ##### KMS Key ID
+   The ID, ARN, alias name (alias/<name>), or alias ARN of the AWS KMS key used to encrypt the certificate secret and the <alias>-pw password secret in the primary region. If not provided, the AWS managed key (aws/secretsmanager) is used. To specify the key used by a replica region, use the KmsKeyId property in the ReplicaRegions entry parameter instead.
+
+   ![AWSSMPFX Entry Parameter - KmsKeyId](docsource/images/AWSSMPFX-entry-parameters-store-type-dialog-KmsKeyId.svg)
+   ![AWSSMPFX Entry Parameter - KmsKeyId](docsource/images/AWSSMPFX-entry-parameters-store-type-dialog-KmsKeyId-validation-options.svg)
 
 
    </details>
@@ -1020,6 +1038,7 @@ the Keyfactor Command Portal
    | ---- | ------------ | ---- | ------------- | ----------------------- | ---------------- | ----------------- | ------------------- | ----------- |
    | CertificateTags | Certificate Tags | If desired, tags can be applied to the certificate entries in AWS Secrets Manager.  Provide them as a JSON string of key-value pairs ie: '{'tag-name': 'tag-content', 'other-tag-name': 'other-tag-content'}'.  Tag values may contain the placeholder tokens %SERIAL_NUMBER%, %NOT_BEFORE%, and %NOT_AFTER%, which are replaced with the certificate's serial number (hexadecimal) and validity dates (ISO-8601 UTC) before the tag is written. | string |  | 🔲 Unchecked | 🔲 Unchecked | 🔲 Unchecked | 🔲 Unchecked |
    | ReplicaRegions | Replica Regions | To replicate secrets to other regions, you can provide them here as a JSON array in the format: [{ 'KmsKeyId': '<optionally specify the encryption key ID', 'Region': '<region name>'}, {...}] | string |  | 🔲 Unchecked | 🔲 Unchecked | 🔲 Unchecked | 🔲 Unchecked |
+   | KmsKeyId | KMS Key ID | The ID, ARN, alias name (alias/<name>), or alias ARN of the AWS KMS key used to encrypt the certificate secret and the <alias>-pw password secret in the primary region. If not provided, the AWS managed key (aws/secretsmanager) is used. To specify the key used by a replica region, use the KmsKeyId property in the ReplicaRegions entry parameter instead. | string |  | 🔲 Unchecked | 🔲 Unchecked | 🔲 Unchecked | 🔲 Unchecked |
 
    The Entry Parameters tab should look like this:
 
@@ -1036,6 +1055,13 @@ the Keyfactor Command Portal
 
    ![AWSSMJKS Entry Parameter - ReplicaRegions](docsource/images/AWSSMJKS-entry-parameters-store-type-dialog-ReplicaRegions.svg)
    ![AWSSMJKS Entry Parameter - ReplicaRegions](docsource/images/AWSSMJKS-entry-parameters-store-type-dialog-ReplicaRegions-validation-options.svg)
+
+
+   ##### KMS Key ID
+   The ID, ARN, alias name (alias/<name>), or alias ARN of the AWS KMS key used to encrypt the certificate secret and the <alias>-pw password secret in the primary region. If not provided, the AWS managed key (aws/secretsmanager) is used. To specify the key used by a replica region, use the KmsKeyId property in the ReplicaRegions entry parameter instead.
+
+   ![AWSSMJKS Entry Parameter - KmsKeyId](docsource/images/AWSSMJKS-entry-parameters-store-type-dialog-KmsKeyId.svg)
+   ![AWSSMJKS Entry Parameter - KmsKeyId](docsource/images/AWSSMJKS-entry-parameters-store-type-dialog-KmsKeyId-validation-options.svg)
 
 
    </details>
